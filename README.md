@@ -8,7 +8,7 @@ Practice vibe coding with API as the theme
 
 ## データベース設計
 
-詳細なデータベース設計については、[DATABASE_DESIGN.md](./DATABASE_DESIGN.md)を参照してください。
+詳細なデータベース設計については、[DATABASE_DESIGN.md](./docs/DATABASE_DESIGN.md)を参照してください。
 
 ## セットアップ
 
