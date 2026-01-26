@@ -1,7 +1,7 @@
 package com.yusay.user.api.application.service;
 
 import com.yusay.user.api.TestcontainersConfiguration;
-import com.yusay.user.api.domain.model.User;
+import com.yusay.user.api.domain.entity.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
