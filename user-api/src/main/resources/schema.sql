@@ -3,7 +3,7 @@
 -- ユーザーテーブル
 -- 認証に必要なユーザーの基本情報を格納
 CREATE TABLE IF NOT EXISTS users (
-    id BIGSERIAL PRIMARY KEY,
+    id VARCHAR(36) PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
@@ -22,7 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 -- ロールテーブル
 -- システムで使用するロール（役割）を定義
 CREATE TABLE IF NOT EXISTS roles (
-    id BIGSERIAL PRIMARY KEY,
+    id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE,
     description VARCHAR(255),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS roles (
 -- ユーザー・ロール関連テーブル
 -- ユーザーとロールの多対多の関係を管理
 CREATE TABLE IF NOT EXISTS user_roles (
-    user_id BIGINT NOT NULL,
-    role_id BIGINT NOT NULL,
+    user_id VARCHAR(36) NOT NULL,
+    role_id VARCHAR(36) NOT NULL,
     assigned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, role_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
 -- 権限テーブル
 -- システムで使用する権限（パーミッション）を定義
 CREATE TABLE IF NOT EXISTS permissions (
-    id BIGSERIAL PRIMARY KEY,
+    id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     resource VARCHAR(100) NOT NULL,
     action VARCHAR(50) NOT NULL,
@@ -59,8 +59,8 @@ CREATE INDEX IF NOT EXISTS idx_permissions_action ON permissions(action);
 -- ロール・権限関連テーブル
 -- ロールと権限の多対多の関係を管理
 CREATE TABLE IF NOT EXISTS role_permissions (
-    role_id BIGINT NOT NULL,
-    permission_id BIGINT NOT NULL,
+    role_id VARCHAR(36) NOT NULL,
+    permission_id VARCHAR(36) NOT NULL,
     assigned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (role_id, permission_id),
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
@@ -70,8 +70,8 @@ CREATE TABLE IF NOT EXISTS role_permissions (
 -- リフレッシュトークンテーブル（オプション: JWT認証を使用する場合）
 -- リフレッシュトークンを管理
 CREATE TABLE IF NOT EXISTS refresh_tokens (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL,
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
     token VARCHAR(255) NOT NULL UNIQUE,
     expiry_date TIMESTAMP NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -85,8 +85,8 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
 -- 監査ログテーブル（オプション: ユーザーアクションを追跡する場合）
 -- セキュリティとコンプライアンスのための監査証跡
 CREATE TABLE IF NOT EXISTS audit_logs (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT,
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36),
     action VARCHAR(100) NOT NULL,
     resource VARCHAR(100),
     details TEXT,

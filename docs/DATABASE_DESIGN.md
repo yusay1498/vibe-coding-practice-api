@@ -28,7 +28,7 @@ users (ユーザー) ←→ user_roles ←→ roles (ロール)
 
 | カラム名 | 型 | 制約 | 説明 |
 |---------|-----|------|------|
-| id | BIGSERIAL | PRIMARY KEY | ユーザーID（自動採番） |
+| id | VARCHAR(36) | PRIMARY KEY | ユーザーID（UUID） |
 | username | VARCHAR(50) | NOT NULL, UNIQUE | ユーザー名 |
 | email | VARCHAR(100) | NOT NULL, UNIQUE | メールアドレス |
 | password_hash | VARCHAR(255) | NOT NULL | パスワードハッシュ（BCrypt） |
@@ -49,7 +49,7 @@ users (ユーザー) ←→ user_roles ←→ roles (ロール)
 
 | カラム名 | 型 | 制約 | 説明 |
 |---------|-----|------|------|
-| id | BIGSERIAL | PRIMARY KEY | ロールID（自動採番） |
+| id | VARCHAR(36) | PRIMARY KEY | ロールID（UUID） |
 | name | VARCHAR(50) | NOT NULL, UNIQUE | ロール名（例: ROLE_ADMIN） |
 | description | VARCHAR(255) | | ロールの説明 |
 | created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP | 作成日時 |
@@ -66,8 +66,8 @@ users (ユーザー) ←→ user_roles ←→ roles (ロール)
 
 | カラム名 | 型 | 制約 | 説明 |
 |---------|-----|------|------|
-| user_id | BIGINT | NOT NULL, FK → users.id | ユーザーID |
-| role_id | BIGINT | NOT NULL, FK → roles.id | ロールID |
+| user_id | VARCHAR(36) | NOT NULL, FK → users.id | ユーザーID |
+| role_id | VARCHAR(36) | NOT NULL, FK → roles.id | ロールID |
 | assigned_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP | 割り当て日時 |
 
 **主キー:** (user_id, role_id)
@@ -81,7 +81,7 @@ users (ユーザー) ←→ user_roles ←→ roles (ロール)
 
 | カラム名 | 型 | 制約 | 説明 |
 |---------|-----|------|------|
-| id | BIGSERIAL | PRIMARY KEY | 権限ID（自動採番） |
+| id | VARCHAR(36) | PRIMARY KEY | 権限ID（UUID） |
 | name | VARCHAR(100) | NOT NULL, UNIQUE | 権限名（例: USER_READ） |
 | resource | VARCHAR(100) | NOT NULL | リソース名（例: USER） |
 | action | VARCHAR(50) | NOT NULL | アクション名（READ, WRITE, DELETE） |
@@ -105,8 +105,8 @@ users (ユーザー) ←→ user_roles ←→ roles (ロール)
 
 | カラム名 | 型 | 制約 | 説明 |
 |---------|-----|------|------|
-| role_id | BIGINT | NOT NULL, FK → roles.id | ロールID |
-| permission_id | BIGINT | NOT NULL, FK → permissions.id | 権限ID |
+| role_id | VARCHAR(36) | NOT NULL, FK → roles.id | ロールID |
+| permission_id | VARCHAR(36) | NOT NULL, FK → permissions.id | 権限ID |
 | assigned_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP | 割り当て日時 |
 
 **主キー:** (role_id, permission_id)
@@ -120,8 +120,8 @@ JWT認証を使用する場合のリフレッシュトークンを管理する�
 
 | カラム名 | 型 | 制約 | 説明 |
 |---------|-----|------|------|
-| id | BIGSERIAL | PRIMARY KEY | トークンID（自動採番） |
-| user_id | BIGINT | NOT NULL, FK → users.id | ユーザーID |
+| id | VARCHAR(36) | PRIMARY KEY | トークンID（UUID） |
+| user_id | VARCHAR(36) | NOT NULL, FK → users.id | ユーザーID |
 | token | VARCHAR(255) | NOT NULL, UNIQUE | リフレッシュトークン |
 | expiry_date | TIMESTAMP | NOT NULL | 有効期限 |
 | created_at | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP | 作成日時 |
@@ -139,8 +139,8 @@ JWT認証を使用する場合のリフレッシュトークンを管理する�
 
 | カラム名 | 型 | 制約 | 説明 |
 |---------|-----|------|------|
-| id | BIGSERIAL | PRIMARY KEY | ログID（自動採番） |
-| user_id | BIGINT | FK → users.id | ユーザーID |
+| id | VARCHAR(36) | PRIMARY KEY | ログID（UUID） |
+| user_id | VARCHAR(36) | FK → users.id | ユーザーID |
 | action | VARCHAR(100) | NOT NULL | アクション（例: LOGIN, LOGOUT） |
 | resource | VARCHAR(100) | | 対象リソース |
 | details | TEXT | | 詳細情報 |
