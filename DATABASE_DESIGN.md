@@ -2,15 +2,11 @@
 
 ## 概要
 
-このドキュメントは、Java 17 + Spring Boot 4.0.2で構築されたユーザー認証・認可基盤のデータベース設計を説明します。
+このドキュメントは、ユーザー認証・認可基盤のデータベース設計を説明します。
 
-## 技術スタック
+## 使用データベース
 
-- **Java**: 17
-- **Spring Boot**: 4.0.2
 - **データベース**: PostgreSQL
-- **ORMフレームワーク**: Spring Data JDBC
-- **テストフレームワーク**: JUnit 5 + Testcontainers
 
 ## データベース設計
 
@@ -171,89 +167,13 @@ JWT認証を使用する場合のリフレッシュトークンを管理する�
 | admin | admin@example.com | admin123 | ROLE_ADMIN |
 | user | user@example.com | admin123 | ROLE_USER |
 
-**注意:** 本番環境ではこれらのデフォルトユーザーを削除または変更してください。
+**⚠️ 警告**: 本番環境ではこれらのデフォルトユーザーを削除または変更してください。
 
 ### ロールと権限の関連
 
 - **ROLE_ADMIN**: 全ての権限
 - **ROLE_MODERATOR**: USER_READ, USER_WRITE, AUDIT_READ
 - **ROLE_USER**: USER_READ
-
-## エンティティクラス
-
-### User エンティティ
-
-```java
-@Table("users")
-public class User {
-    @Id
-    private Long id;
-    private String username;
-    private String email;
-    private String passwordHash;
-    private Boolean enabled;
-    private Boolean accountNonExpired;
-    private Boolean accountNonLocked;
-    private Boolean credentialsNonExpired;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-}
-```
-
-### Role エンティティ
-
-```java
-@Table("roles")
-public class Role {
-    @Id
-    private Long id;
-    private String name;
-    private String description;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-}
-```
-
-### Permission エンティティ
-
-```java
-@Table("permissions")
-public class Permission {
-    @Id
-    private Long id;
-    private String name;
-    private String resource;
-    private String action;
-    private String description;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-}
-```
-
-## Repositoryインターフェース
-
-### UserRepository
-
-主要なメソッド：
-- `findByUsername(String username)`: ユーザー名でユーザーを検索
-- `findByEmail(String email)`: メールアドレスでユーザーを検索
-- `existsByUsername(String username)`: ユーザー名の存在確認
-- `existsByEmail(String email)`: メールアドレスの存在確認
-
-### RoleRepository
-
-主要なメソッド：
-- `findByName(String name)`: ロール名でロールを検索
-- `findByUserId(Long userId)`: ユーザーIDに紐づくロール一覧を取得
-- `existsByName(String name)`: ロール名の存在確認
-
-### PermissionRepository
-
-主要なメソッド：
-- `findByName(String name)`: 権限名で権限を検索
-- `findByResourceAndAction(String resource, String action)`: リソースとアクションで権限を検索
-- `findByRoleId(Long roleId)`: ロールIDに紐づく権限一覧を取得
-- `findByUserId(Long userId)`: ユーザーIDに紐づく全ての権限を取得
 
 ## セットアップ方法
 
@@ -265,25 +185,15 @@ Docker Composeを使用してPostgreSQLを起動：
 docker-compose up -d postgres
 ```
 
-### 2. アプリケーションの起動
+データベースは自動的に `schema.sql` と `data.sql` を実行して初期化されます。
 
-```bash
-./mvnw spring-boot:run -pl user-api
-```
-
-### 3. データベース管理ツール（DbGate）の起動
+### 2. データベース管理ツール（DbGate）の起動
 
 ```bash
 docker-compose up -d dbgate
 ```
 
 DbGateにアクセス: http://localhost:5480
-
-### 4. テストの実行
-
-```bash
-./mvnw test -pl user-api
-```
 
 ## セキュリティ考慮事項
 
@@ -295,11 +205,11 @@ DbGateにアクセス: http://localhost:5480
 
 ## 今後の拡張
 
-1. **多要素認証（MFA）**: TOTPやSMS認証の追加
-2. **OAuth2/OIDC**: ソーシャルログインのサポート
-3. **パスワードポリシー**: 複雑さの要件、履歴管理
-4. **セッション管理**: 同時ログインの制限
-5. **IPホワイトリスト**: アクセス制御の強化
+1. **多要素認証（MFA）**: TOTPやSMS認証のテーブル追加
+2. **OAuth2/OIDC**: ソーシャルログイン用のテーブル設計
+3. **パスワードポリシー**: パスワード履歴管理テーブル
+4. **セッション管理**: セッション情報を格納するテーブル
+5. **IPホワイトリスト**: アクセス制御用のテーブル
 
 ## ライセンス
 
