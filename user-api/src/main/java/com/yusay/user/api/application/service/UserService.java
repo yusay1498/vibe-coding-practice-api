@@ -1,10 +1,9 @@
 package com.yusay.user.api.application.service;
 
 import com.yusay.user.api.domain.entity.User;
+import com.yusay.user.api.domain.exception.UserNotFoundException;
 import com.yusay.user.api.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Service
 public class UserService {
@@ -15,7 +14,8 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public Optional<User> findById(String id) {
-        return userRepository.findById(id);
+    public User findById(String id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
     }
 }
