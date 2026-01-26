@@ -2,6 +2,7 @@
 
 -- ユーザーテーブル
 -- 認証に必要なユーザーの基本情報を格納
+-- 注意: updated_atはアプリケーション側で明示的に更新する必要があります
 CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(36) PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -16,11 +17,11 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- ユーザーテーブルのインデックス
-CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+-- username / email の UNIQUE 制約により自動的にインデックスが作成されるため、明示的なインデックス定義は不要
 
 -- ロールテーブル
 -- システムで使用するロール（役割）を定義
+-- 注意: updated_atはアプリケーション側で明示的に更新する必要があります
 CREATE TABLE IF NOT EXISTS roles (
     id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE,
@@ -42,6 +43,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
 
 -- 権限テーブル
 -- システムで使用する権限（パーミッション）を定義
+-- 注意: updated_atはアプリケーション側で明示的に更新する必要があります
 CREATE TABLE IF NOT EXISTS permissions (
     id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
@@ -69,6 +71,7 @@ CREATE TABLE IF NOT EXISTS role_permissions (
 
 -- リフレッシュトークンテーブル（オプション: JWT認証を使用する場合）
 -- リフレッシュトークンを管理
+-- セキュリティ注意: tokenカラムはハッシュ化して保存することを推奨（DB漏洩時のリスク軽減）
 CREATE TABLE IF NOT EXISTS refresh_tokens (
     id VARCHAR(36) PRIMARY KEY,
     user_id VARCHAR(36) NOT NULL,
