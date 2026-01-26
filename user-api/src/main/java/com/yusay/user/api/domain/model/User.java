@@ -31,6 +31,11 @@ public class User {
     }
 
     public User(String username, String email, String passwordHash) {
+        this(username, email, passwordHash, LocalDateTime.now());
+    }
+
+    // テスト用コンストラクタ - タイムスタンプを指定可能
+    public User(String username, String email, String passwordHash, LocalDateTime timestamp) {
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
@@ -38,8 +43,8 @@ public class User {
         this.accountNonExpired = true;
         this.accountNonLocked = true;
         this.credentialsNonExpired = true;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.createdAt = timestamp;
+        this.updatedAt = timestamp;
     }
 
     // Getters

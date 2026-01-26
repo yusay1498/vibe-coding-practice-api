@@ -28,12 +28,17 @@ public class Permission {
     }
 
     public Permission(String name, String resource, String action, String description) {
+        this(name, resource, action, description, LocalDateTime.now());
+    }
+
+    // テスト用コンストラクタ - タイムスタンプを指定可能
+    public Permission(String name, String resource, String action, String description, LocalDateTime timestamp) {
         this.name = name;
         this.resource = resource;
         this.action = action;
         this.description = description;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.createdAt = timestamp;
+        this.updatedAt = timestamp;
     }
 
     // Getters

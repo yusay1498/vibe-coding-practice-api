@@ -26,10 +26,15 @@ public class Role {
     }
 
     public Role(String name, String description) {
+        this(name, description, LocalDateTime.now());
+    }
+
+    // テスト用コンストラクタ - タイムスタンプを指定可能
+    public Role(String name, String description, LocalDateTime timestamp) {
         this.name = name;
         this.description = description;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.createdAt = timestamp;
+        this.updatedAt = timestamp;
     }
 
     // Getters

@@ -46,7 +46,10 @@ WHERE r.name = 'ROLE_USER'
 ON CONFLICT DO NOTHING;
 
 -- テスト用のデフォルトユーザーを作成
+-- ⚠️ 警告: これらのユーザーは開発・テスト専用です
+-- ⚠️ 本番環境では必ずこれらのアカウントを削除または変更してください
 -- パスワード: "admin123" のBCrypt ハッシュ (strength 10)
+-- セキュリティのため、本番環境では異なるパスワードを使用してください
 INSERT INTO users (username, email, password_hash, enabled) VALUES
     ('admin', 'admin@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true),
     ('user', 'user@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)
