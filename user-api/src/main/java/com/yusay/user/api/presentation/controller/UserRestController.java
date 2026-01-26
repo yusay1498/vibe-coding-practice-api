@@ -20,7 +20,7 @@ public class UserRestController {
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUser(@PathVariable String id) {
-        User user = userService.getUser(id);
+        User user = userService.findUser(id);
         return ResponseEntity.ok(user);
     }
 }

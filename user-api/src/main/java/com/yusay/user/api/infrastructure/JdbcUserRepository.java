@@ -1,4 +1,4 @@
-package com.yusay.user.api.infrastructure.repository;
+package com.yusay.user.api.infrastructure;
 
 import com.yusay.user.api.domain.entity.User;
 import com.yusay.user.api.domain.repository.UserRepository;
