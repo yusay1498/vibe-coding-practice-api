@@ -1,7 +1,7 @@
-package com.yusay.user.api.controller;
+package com.yusay.user.api.presentation.controller;
 
-import com.yusay.user.api.entity.User;
-import com.yusay.user.api.service.UserService;
+import com.yusay.user.api.application.service.UserService;
+import com.yusay.user.api.domain.model.User;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

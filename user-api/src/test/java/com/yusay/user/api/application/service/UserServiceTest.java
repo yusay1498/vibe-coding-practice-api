@@ -1,8 +1,7 @@
-package com.yusay.user.api.controller;
+package com.yusay.user.api.application.service;
 
 import com.yusay.user.api.TestcontainersConfiguration;
-import com.yusay.user.api.entity.User;
-import com.yusay.user.api.service.UserService;
+import com.yusay.user.api.domain.model.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest
-class UserControllerTest {
+class UserServiceTest {
 
     @Autowired
     private UserService userService;

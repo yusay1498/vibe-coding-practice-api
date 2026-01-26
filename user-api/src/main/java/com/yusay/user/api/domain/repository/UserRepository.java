@@ -1,6 +1,6 @@
-package com.yusay.user.api.repository;
+package com.yusay.user.api.domain.repository;
 
-import com.yusay.user.api.entity.User;
+import com.yusay.user.api.domain.model.User;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 

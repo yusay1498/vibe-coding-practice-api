@@ -1,4 +1,4 @@
-package com.yusay.user.api.config;
+package com.yusay.user.api.presentation.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

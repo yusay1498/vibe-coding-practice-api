@@ -1,4 +1,4 @@
-package com.yusay.user.api.entity;
+package com.yusay.user.api.domain.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;

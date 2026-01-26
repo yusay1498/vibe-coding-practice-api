@@ -1,7 +1,7 @@
-package com.yusay.user.api.service;
+package com.yusay.user.api.application.service;
 
-import com.yusay.user.api.entity.User;
-import com.yusay.user.api.repository.UserRepository;
+import com.yusay.user.api.domain.model.User;
+import com.yusay.user.api.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
