@@ -1,0 +1,41 @@
+services:
+  user-api:
+    build: ./user-api
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/users
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+
+  postgres:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: users
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - "{SQLのパスを追加}:/docker-entrypoint-initdb.d/schema.sql" # TODO: データベースの設計が決まったらパスを追加
+    healthcheck:
+      test: pg_isready -h 127.0.0.1 -U postgres -d users
+      interval: 5s
+
+  dbgate:
+    image: dbgate/dbgate
+    environment:
+      CONNECTIONS: conn1
+      LABEL_conn1: postgres
+      SERVER_conn1: postgres
+      USER_conn1: postgres
+      PASSWORD_conn1: postgres
+      PORT_conn1: 5432
+      ENGINE_conn1: postgres@dbgate-plugin-postgres
+    ports:
+      - "5480:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
