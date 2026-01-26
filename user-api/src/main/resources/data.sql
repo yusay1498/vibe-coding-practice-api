@@ -24,46 +24,23 @@ ON CONFLICT (name) DO NOTHING;
 -- ロールと権限の関連付け
 -- ROLE_ADMIN: 全ての権限
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM roles r, permissions p
-WHERE r.name = 'ROLE_ADMIN'
+SELECT roles.id, permissions.id
+FROM roles, permissions
+WHERE roles.name = 'ROLE_ADMIN'
 ON CONFLICT DO NOTHING;
 
 -- ROLE_MODERATOR: ユーザー管理とログ閲覧
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM roles r, permissions p
-WHERE r.name = 'ROLE_MODERATOR'
-  AND p.name IN ('USER_READ', 'USER_WRITE', 'AUDIT_READ')
+SELECT roles.id, permissions.id
+FROM roles, permissions
+WHERE roles.name = 'ROLE_MODERATOR'
+  AND permissions.name IN ('USER_READ', 'USER_WRITE', 'AUDIT_READ')
 ON CONFLICT DO NOTHING;
 
 -- ROLE_USER: 自身の情報の読み取りのみ
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM roles r, permissions p
-WHERE r.name = 'ROLE_USER'
-  AND p.name IN ('USER_READ')
-ON CONFLICT DO NOTHING;
-
--- テスト用のデフォルトユーザーを作成
--- ⚠️ 警告: これらのユーザーは開発・テスト専用です
--- ⚠️ 本番環境では必ずこれらのアカウントを削除または変更してください
--- パスワード: "admin123" のBCrypt ハッシュ (strength 10)
--- セキュリティのため、本番環境では異なるパスワードを使用してください
-INSERT INTO users (username, email, password_hash, enabled) VALUES
-    ('admin', 'admin@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true),
-    ('user', 'user@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)
-ON CONFLICT (username) DO NOTHING;
-
--- テストユーザーにロールを割り当て
-INSERT INTO user_roles (user_id, role_id)
-SELECT u.id, r.id
-FROM users u, roles r
-WHERE u.username = 'admin' AND r.name = 'ROLE_ADMIN'
-ON CONFLICT DO NOTHING;
-
-INSERT INTO user_roles (user_id, role_id)
-SELECT u.id, r.id
-FROM users u, roles r
-WHERE u.username = 'user' AND r.name = 'ROLE_USER'
+SELECT roles.id, permissions.id
+FROM roles, permissions
+WHERE roles.name = 'ROLE_USER'
+  AND permissions.name IN ('USER_READ')
 ON CONFLICT DO NOTHING;
