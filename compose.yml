@@ -22,7 +22,7 @@ services:
       - ./user-api/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
       - ./user-api/src/main/resources/data.sql:/docker-entrypoint-initdb.d/02-data.sql
       # テスト環境の場合は以下のコメントを外してテストデータを読み込む
-      # - ./user-api/src/test/resources/test-data.sql:/docker-entrypoint-initdb.d/03-test-data.sql
+      # - ./user-api/src/test/resources/data.sql:/docker-entrypoint-initdb.d/03-test-data.sql
     healthcheck:
       test: pg_isready -h 127.0.0.1 -U postgres -d users
       interval: 5s
