@@ -1,5 +1,6 @@
 package com.yusay.user.api.domain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -11,6 +12,7 @@ public record User(
     String id,
     String username,
     String email,
+    @JsonIgnore
     String passwordHash,
     Boolean enabled,
     Boolean accountNonExpired,
