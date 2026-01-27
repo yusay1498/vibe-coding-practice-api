@@ -17,6 +17,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @JdbcTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({TestcontainersConfiguration.class, JdbcUserRepository.class})
 @DisplayName("JdbcUserRepository のテスト")
 class JdbcUserRepositoryTest {
@@ -36,7 +37,7 @@ class JdbcUserRepositoryTest {
                                account_non_expired, account_non_locked, credentials_non_expired,
                                created_at, updated_at)
             VALUES ('test-user-id-001', 'testuser', 'test@example.com', '$2a$10$test-password-hash',
-                    true, true, true, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
             """
     })
     @DisplayName("findById: ユーザーが存在する場合、Userを返す")
@@ -84,14 +85,14 @@ class JdbcUserRepositoryTest {
                                account_non_expired, account_non_locked, credentials_non_expired,
                                created_at, updated_at)
             VALUES ('test-user-id-001', 'user1', 'user1@example.com', '$2a$10$hash1',
-                    true, true, true, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
             """,
             """
             INSERT INTO users (id, username, email, password_hash, enabled,
                                account_non_expired, account_non_locked, credentials_non_expired,
                                created_at, updated_at)
             VALUES ('test-user-id-002', 'user2', 'user2@example.com', '$2a$10$hash2',
-                    true, true, true, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
             """
     })
     @DisplayName("findById: 複数のユーザーが存在する場合、指定したIDのユーザーのみを返す")
@@ -117,7 +118,7 @@ class JdbcUserRepositoryTest {
                                account_non_expired, account_non_locked, credentials_non_expired,
                                created_at, updated_at)
             VALUES ('disabled-user-id', 'disableduser', 'disabled@example.com', '$2a$10$disabled-hash',
-                    false, true, true, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+                    false, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
             """
     })
     @DisplayName("findById: enabledがfalseのユーザーも取得できる")
