@@ -17,7 +17,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @JdbcTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({TestcontainersConfiguration.class, JdbcUserRepository.class})
 @DisplayName("JdbcUserRepository のテスト")
 class JdbcUserRepositoryTest {
