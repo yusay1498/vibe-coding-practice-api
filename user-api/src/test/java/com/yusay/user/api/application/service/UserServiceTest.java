@@ -32,6 +32,7 @@ class UserServiceTest {
     void lookup_ReturnsUser_WhenUserExists() {
         // Arrange
         String userId = "test-user-id";
+        LocalDateTime fixedDateTime = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
         User expectedUser = new User(
                 userId,
                 "testuser",
@@ -41,8 +42,8 @@ class UserServiceTest {
                 true,
                 true,
                 true,
-                LocalDateTime.now(),
-                LocalDateTime.now()
+                fixedDateTime,
+                fixedDateTime
         );
         when(userRepository.findById(userId)).thenReturn(Optional.of(expectedUser));
 
