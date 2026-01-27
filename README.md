@@ -15,22 +15,6 @@ Practice vibe coding with API as the theme
 ### 前提条件
 
 - Docker & Docker Compose
-- Java 25 (またはDevcontainerを使用)
-
-### 開発環境のセットアップ
-
-#### オプション1: Devcontainer（推奨）
-
-このプロジェクトにはJava 25環境を自動セットアップする`.devcontainer`設定が含まれています。
-
-VS CodeまたはGitHub Codespaces/Copilot Workspaceで：
-1. プロジェクトを開く
-2. "Reopen in Container"を選択
-3. 自動的にJava 25環境がセットアップされます
-
-#### オプション2: ローカル環境
-
-Java 25を手動でインストールして使用することもできます。
 
 ### データベースの起動
 
