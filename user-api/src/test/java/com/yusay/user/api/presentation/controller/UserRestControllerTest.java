@@ -9,8 +9,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,15 +18,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("UserRestController のテスト")
+@Sql(scripts = "classpath:schema.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class UserRestControllerTest {
 
     private static final String EXISTING_USER_ID = "750e8400-e29b-41d4-a716-446655440001";
     private static final String NON_EXISTING_USER_ID = "00000000-0000-0000-0000-000000000000";
-
-    @DynamicPropertySource
-    static void registerProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.sql.init.mode", () -> "always");
-    }
 
     @Autowired
     private MockMvcTester mockMvcTester;
@@ -35,6 +30,13 @@ class UserRestControllerTest {
     @Test
     @WithMockUser
     @DisplayName("存在するユーザーIDでユーザー情報を取得できること")
+    @Sql(statements = {
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES ('750e8400-e29b-41d4-a716-446655440001', 'admin', 'admin@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)
+            ON CONFLICT DO NOTHING;
+            """
+    })
     void testGetUser_Success() throws Exception {
         var assertResult = assertThat(mockMvcTester.get().uri("/users/{id}", EXISTING_USER_ID))
                 .hasStatusOk()
@@ -63,7 +65,15 @@ class UserRestControllerTest {
     }
 
     @Test
+    @WithMockUser
     @DisplayName("認証なしでもアクセスできること（現在の設定ではpermitAllのため）")
+    @Sql(statements = {
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES ('750e8400-e29b-41d4-a716-446655440001', 'admin', 'admin@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)
+            ON CONFLICT DO NOTHING;
+            """
+    })
     void testGetUser_WithoutAuth() throws Exception {
         assertThat(mockMvcTester.get().uri("/users/{id}", EXISTING_USER_ID))
                 .hasStatusOk()
