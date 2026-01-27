@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({TestcontainersConfiguration.class, JdbcUserRepository.class})
-@Sql(scripts = {"/schema.sql", "/data.sql"})
+@Sql(scripts = "/schema.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 @DisplayName("JdbcUserRepository のテスト")
 class JdbcUserRepositoryTest {
 
@@ -25,10 +25,14 @@ class JdbcUserRepositoryTest {
     private JdbcUserRepository jdbcUserRepository;
 
     @Test
+    @Sql("/test-data-single-user.sql")
     @DisplayName("findById: ユーザーが存在する場合、Userを返す")
     void findById_whenUserExists_returnsUser() {
-        // Given: テストデータから提供されているユーザーID
-        String userId = "750e8400-e29b-41d4-a716-446655440001";
+        // Given: テストユーザーを挿入
+        String userId = "test-user-id-001";
+        String username = "testuser";
+        String email = "test@example.com";
+        String passwordHash = "$2a$10$test-password-hash";
 
         // When: findByIdを実行
         Optional<User> result = jdbcUserRepository.findById(userId);
@@ -36,9 +40,9 @@ class JdbcUserRepositoryTest {
         // Then: ユーザーが取得できることを確認
         assertThat(result).isPresent();
         assertThat(result.get().id()).isEqualTo(userId);
-        assertThat(result.get().username()).isEqualTo("admin");
-        assertThat(result.get().email()).isEqualTo("admin@example.com");
-        assertThat(result.get().passwordHash()).isEqualTo("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
+        assertThat(result.get().username()).isEqualTo(username);
+        assertThat(result.get().email()).isEqualTo(email);
+        assertThat(result.get().passwordHash()).isEqualTo(passwordHash);
         assertThat(result.get().enabled()).isTrue();
         assertThat(result.get().accountNonExpired()).isTrue();
         assertThat(result.get().accountNonLocked()).isTrue();
@@ -61,11 +65,12 @@ class JdbcUserRepositoryTest {
     }
 
     @Test
+    @Sql("/test-data-multiple-users.sql")
     @DisplayName("findById: 複数のユーザーが存在する場合、指定したIDのユーザーのみを返す")
     void findById_whenMultipleUsersExist_returnsOnlySpecifiedUser() {
-        // Given: テストデータから提供されている2つのユーザーID
-        String userId1 = "750e8400-e29b-41d4-a716-446655440001";
-        String userId2 = "750e8400-e29b-41d4-a716-446655440002";
+        // Given: 複数のテストユーザーを挿入
+        String userId1 = "test-user-id-001";
+        String userId2 = "test-user-id-002";
 
         // When: userId1でfindByIdを実行
         Optional<User> result = jdbcUserRepository.findById(userId1);
@@ -73,7 +78,22 @@ class JdbcUserRepositoryTest {
         // Then: userId1のユーザーのみが取得できることを確認
         assertThat(result).isPresent();
         assertThat(result.get().id()).isEqualTo(userId1);
-        assertThat(result.get().username()).isEqualTo("admin");
-        assertThat(result.get().email()).isEqualTo("admin@example.com");
+        assertThat(result.get().username()).isEqualTo("user1");
+        assertThat(result.get().email()).isEqualTo("user1@example.com");
+    }
+
+    @Test
+    @Sql("/test-data-disabled-user.sql")
+    @DisplayName("findById: enabledがfalseのユーザーも取得できる")
+    void findById_whenUserIsDisabled_returnsUser() {
+        // Given: enabledがfalseのテストユーザーを挿入
+        String userId = "disabled-user-id";
+
+        // When: findByIdを実行
+        Optional<User> result = jdbcUserRepository.findById(userId);
+
+        // Then: enabledがfalseのユーザーが取得できることを確認
+        assertThat(result).isPresent();
+        assertThat(result.get().enabled()).isFalse();
     }
 }
