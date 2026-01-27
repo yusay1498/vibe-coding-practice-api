@@ -1,0 +1,20 @@
+{
+  "name": "Java 25 Development Environment",
+  "image": "eclipse-temurin:25-jdk",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "java -version && mvn --version",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-spring-boot-dashboard",
+        "vscjava.vscode-spring-initializr",
+        "vmware.vscode-boot-dev-pack"
+      ]
+    }
+  },
+  "remoteUser": "root"
+}
