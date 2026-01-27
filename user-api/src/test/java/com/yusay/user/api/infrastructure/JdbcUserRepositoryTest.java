@@ -127,4 +127,30 @@ class JdbcUserRepositoryTest {
         assertThat(result).isPresent();
         assertThat(result.get().enabled()).isFalse();
     }
+
+    @Test
+    @DisplayName("findById: nullのIDを渡した場合、空のOptionalを返す")
+    void findById_whenIdIsNull_returnsEmptyOptional() {
+        // Given: nullのユーザーID
+        String nullUserId = null;
+
+        // When: findByIdを実行
+        Optional<User> result = jdbcUserRepository.findById(nullUserId);
+
+        // Then: 空のOptionalが返されることを確認
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("findById: 空文字列のIDを渡した場合、空のOptionalを返す")
+    void findById_whenIdIsEmpty_returnsEmptyOptional() {
+        // Given: 空文字列のユーザーID
+        String emptyUserId = "";
+
+        // When: findByIdを実行
+        Optional<User> result = jdbcUserRepository.findById(emptyUserId);
+
+        // Then: 空のOptionalが返されることを確認
+        assertThat(result).isEmpty();
+    }
 }
