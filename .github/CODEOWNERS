@@ -4,18 +4,3 @@
 
 # Default owner for everything in the repo
 * @yusay1498
-
-# Java/Spring Boot source code
-/user-api/ @yusay1498
-
-# Database documentation and design
-/docs/ @yusay1498
-
-# Configuration files
-*.yml @yusay1498
-*.xml @yusay1498
-*.properties @yusay1498
-
-# Docker configuration
-compose.yml @yusay1498
-Dockerfile @yusay1498
