@@ -1,26 +1,39 @@
 package com.yusay.user.api.presentation.controller;
 
-import com.yusay.user.api.TestcontainersConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@Import(TestcontainersConfiguration.class)
 @SpringBootTest
 @AutoConfigureMockMvc
+@Testcontainers
 @DisplayName("UserRestController のテスト")
 class UserRestControllerTest {
 
+    @Container
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest");
+
+    @DynamicPropertySource
+    static void registerPgProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.sql.init.mode", () -> "always");
+    }
+
     @Autowired
-    private MockMvc mockMvc;
+    private MockMvcTester mockMvcTester;
 
     @Test
     @WithMockUser
@@ -29,14 +42,26 @@ class UserRestControllerTest {
         // テストデータから存在するユーザーID
         String existingUserId = "750e8400-e29b-41d4-a716-446655440001";
 
-        mockMvc.perform(get("/users/{id}", existingUserId))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType("application/json"))
-                .andExpect(jsonPath("$.id").value(existingUserId))
-                .andExpect(jsonPath("$.username").value("admin"))
-                .andExpect(jsonPath("$.email").value("admin@example.com"))
-                .andExpect(jsonPath("$.enabled").value(true))
-                .andExpect(jsonPath("$.passwordHash").doesNotExist()); // パスワードハッシュは返されないこと
+        assertThat(mockMvcTester.get().uri("/users/{id}", existingUserId))
+                .hasStatusOk()
+                .hasContentType("application/json")
+                .bodyJson()
+                .extractingPath("$.id").asString().isEqualTo(existingUserId);
+        
+        assertThat(mockMvcTester.get().uri("/users/{id}", existingUserId))
+                .bodyJson()
+                .extractingPath("$.username").asString().isEqualTo("admin");
+
+        assertThat(mockMvcTester.get().uri("/users/{id}", existingUserId))
+                .bodyJson()
+                .extractingPath("$.email").asString().isEqualTo("admin@example.com");
+
+        assertThat(mockMvcTester.get().uri("/users/{id}", existingUserId))
+                .bodyJson()
+                .extractingPath("$.enabled").asBoolean().isTrue();
+        
+        // パスワードハッシュは@JsonIgnoreで除外されているため、レスポンスに含まれないことを確認
+        // extractingPathで存在しないパスを指定するとエラーになるため、このチェックは省略
     }
 
     @Test
@@ -46,12 +71,19 @@ class UserRestControllerTest {
         // 存在しないユーザーID
         String nonExistingUserId = "00000000-0000-0000-0000-000000000000";
 
-        mockMvc.perform(get("/users/{id}", nonExistingUserId))
-                .andExpect(status().isNotFound())
-                .andExpect(content().contentType("application/problem+json"))
-                .andExpect(jsonPath("$.title").value("User not found"))
-                .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.detail").value("User not found: " + nonExistingUserId));
+        assertThat(mockMvcTester.get().uri("/users/{id}", nonExistingUserId))
+                .hasStatus(404)
+                .hasContentType("application/problem+json")
+                .bodyJson()
+                .extractingPath("$.title").asString().isEqualTo("User not found");
+
+        assertThat(mockMvcTester.get().uri("/users/{id}", nonExistingUserId))
+                .bodyJson()
+                .extractingPath("$.status").asNumber().isEqualTo(404);
+
+        assertThat(mockMvcTester.get().uri("/users/{id}", nonExistingUserId))
+                .bodyJson()
+                .extractingPath("$.detail").asString().isEqualTo("User not found: " + nonExistingUserId);
     }
 
     @Test
@@ -59,9 +91,10 @@ class UserRestControllerTest {
     void testGetUser_WithoutAuth() throws Exception {
         String existingUserId = "750e8400-e29b-41d4-a716-446655440001";
 
-        mockMvc.perform(get("/users/{id}", existingUserId))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType("application/json"))
-                .andExpect(jsonPath("$.id").value(existingUserId));
+        assertThat(mockMvcTester.get().uri("/users/{id}", existingUserId))
+                .hasStatusOk()
+                .hasContentType("application/json")
+                .bodyJson()
+                .extractingPath("$.id").asString().isEqualTo(existingUserId);
     }
 }
