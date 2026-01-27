@@ -3,29 +3,29 @@ package com.yusay.user.api.application.service;
 import com.yusay.user.api.domain.entity.User;
 import com.yusay.user.api.domain.exception.UserNotFoundException;
 import com.yusay.user.api.domain.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    @Mock
     private UserRepository userRepository;
-
-    @InjectMocks
     private UserService userService;
+
+    @BeforeEach
+    void setUp() {
+        userRepository = mock(UserRepository.class);
+        userService = new UserService(userRepository);
+    }
 
     @Test
     @DisplayName("lookup()はIDに対応するユーザーを返す")
