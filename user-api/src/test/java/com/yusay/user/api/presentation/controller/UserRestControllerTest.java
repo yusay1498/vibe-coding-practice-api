@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -44,7 +45,7 @@ class UserRestControllerTest {
 
         assertThat(mockMvcTester.get().uri("/users/{id}", existingUserId))
                 .hasStatusOk()
-                .hasContentType("application/json")
+                .hasContentType(MediaType.APPLICATION_JSON)
                 .bodyJson()
                 .extractingPath("$.id").asString().isEqualTo(existingUserId);
         
@@ -73,7 +74,7 @@ class UserRestControllerTest {
 
         assertThat(mockMvcTester.get().uri("/users/{id}", nonExistingUserId))
                 .hasStatus(404)
-                .hasContentType("application/problem+json")
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .bodyJson()
                 .extractingPath("$.title").asString().isEqualTo("User not found");
 
@@ -93,7 +94,7 @@ class UserRestControllerTest {
 
         assertThat(mockMvcTester.get().uri("/users/{id}", existingUserId))
                 .hasStatusOk()
-                .hasContentType("application/json")
+                .hasContentType(MediaType.APPLICATION_JSON)
                 .bodyJson()
                 .extractingPath("$.id").asString().isEqualTo(existingUserId);
     }
