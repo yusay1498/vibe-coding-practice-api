@@ -8,8 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.jdbc.test.autoconfigure.JdbcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.util.Optional;
 
@@ -18,16 +17,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({TestcontainersConfiguration.class, JdbcUserRepository.class})
+@Sql(scripts = {"/schema.sql", "/data.sql"})
 @DisplayName("JdbcUserRepository のテスト")
 class JdbcUserRepositoryTest {
 
     @Autowired
     private JdbcUserRepository jdbcUserRepository;
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.sql.init.mode", () -> "always");
-    }
 
     @Test
     @DisplayName("findById: ユーザーが存在する場合、Userを返す")
