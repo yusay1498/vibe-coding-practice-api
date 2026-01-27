@@ -9,6 +9,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
@@ -18,8 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("UserRestController のテスト")
-@Sql(scripts = "classpath:schema.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class UserRestControllerTest {
+
+    @DynamicPropertySource
+    static void registerProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.sql.init.mode", () -> "always");
+    }
 
     @Autowired
     private MockMvcTester mockMvcTester;
@@ -66,7 +72,6 @@ class UserRestControllerTest {
     }
 
     @Test
-    @WithMockUser
     @DisplayName("認証なしでもアクセスできること（現在の設定ではpermitAllのため）")
     @Sql(statements = {
             """
