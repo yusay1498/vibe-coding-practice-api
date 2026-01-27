@@ -3,7 +3,6 @@ package com.yusay.user.api.application.service;
 import com.yusay.user.api.domain.entity.User;
 import com.yusay.user.api.domain.exception.UserNotFoundException;
 import com.yusay.user.api.domain.repository.UserRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -18,19 +17,13 @@ import static org.mockito.Mockito.when;
 
 class UserServiceTest {
 
-    private UserRepository userRepository;
-    private UserService userService;
-
-    @BeforeEach
-    void setUp() {
-        userRepository = mock(UserRepository.class);
-        userService = new UserService(userRepository);
-    }
-
     @Test
     @DisplayName("lookup()はIDに対応するユーザーを返す")
     void lookup_ReturnsUser_WhenUserExists() {
         // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserService userService = new UserService(userRepository);
+        
         String userId = "test-user-id";
         LocalDateTime fixedDateTime = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
         User expectedUser = new User(
@@ -59,6 +52,9 @@ class UserServiceTest {
     @DisplayName("lookup()はユーザーが見つからない場合にUserNotFoundExceptionをスローする")
     void lookup_ThrowsUserNotFoundException_WhenUserNotFound() {
         // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserService userService = new UserService(userRepository);
+        
         String userId = "non-existent-id";
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
