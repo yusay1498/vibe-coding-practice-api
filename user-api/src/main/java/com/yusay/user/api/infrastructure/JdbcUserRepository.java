@@ -31,8 +31,8 @@ public class JdbcUserRepository implements UserRepository {
     }
 
     @Override
-    public void deleteById(String id) {
-        jdbcClient.sql("""
+    public int deleteById(String id) {
+        return jdbcClient.sql("""
                     DELETE FROM users
                     WHERE id = :id
                 """)

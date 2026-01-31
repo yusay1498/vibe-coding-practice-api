@@ -13,7 +13,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -137,26 +136,12 @@ class UserServiceTest {
         UserService userService = new UserService(userRepository);
         
         String userId = "test-user-id";
-        LocalDateTime fixedDateTime = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
-        User existingUser = new User(
-                userId,
-                "testuser",
-                "test@example.com",
-                "hashedPassword",
-                true,
-                true,
-                true,
-                true,
-                fixedDateTime,
-                fixedDateTime
-        );
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.deleteById(userId)).thenReturn(1);
 
         // Act
         userService.delete(userId);
 
         // Assert
-        verify(userRepository).findById(userId);
         verify(userRepository).deleteById(userId);
     }
 
@@ -168,13 +153,12 @@ class UserServiceTest {
         UserService userService = new UserService(userRepository);
         
         String userId = "non-existent-id";
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userRepository.deleteById(userId)).thenReturn(0);
 
         // Act & Assert
         assertThatThrownBy(() -> userService.delete(userId))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("User not found: " + userId);
-        verify(userRepository).findById(userId);
-        verify(userRepository, never()).deleteById(userId);
+        verify(userRepository).deleteById(userId);
     }
 }
