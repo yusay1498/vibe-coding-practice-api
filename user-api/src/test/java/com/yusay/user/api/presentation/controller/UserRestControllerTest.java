@@ -95,12 +95,12 @@ class UserRestControllerTest {
     @DisplayName("全てのユーザー情報を取得できること")
     @Sql(statements = {
             """
+            DELETE FROM users;
             INSERT INTO users (id, username, email, password_hash, enabled)
             VALUES 
-                ('750e8400-e29b-41d4-a716-446655440001', 'user1', 'user1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true),
-                ('750e8400-e29b-41d4-a716-446655440002', 'user2', 'user2@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true),
-                ('750e8400-e29b-41d4-a716-446655440003', 'user3', 'user3@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', false)
-            ON CONFLICT DO NOTHING;
+                ('850e8400-e29b-41d4-a716-446655440001', 'user1', 'user1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true),
+                ('850e8400-e29b-41d4-a716-446655440002', 'user2', 'user2@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true),
+                ('850e8400-e29b-41d4-a716-446655440003', 'user3', 'user3@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', false);
             """
     })
     void testGetAllUsers_Success() throws Exception {
@@ -108,13 +108,13 @@ class UserRestControllerTest {
                 .hasStatusOk()
                 .hasContentType(MediaType.APPLICATION_JSON);
 
-        assertResult.bodyJson().extractingPath("$").asList().hasSizeGreaterThanOrEqualTo(3);
+        assertResult.bodyJson().extractingPath("$").asList().hasSize(3);
         
         // 最初のユーザーが取得できていることを確認
-        assertResult.bodyJson().extractingPath("$[?(@.username=='user1')].id").asString()
-                .isEqualTo("750e8400-e29b-41d4-a716-446655440001");
-        assertResult.bodyJson().extractingPath("$[?(@.username=='user1')].email").asString()
-                .isEqualTo("user1@example.com");
+        assertResult.bodyJson().extractingPath("$[?(@.username=='user1')].id").asList()
+                .singleElement().isEqualTo("850e8400-e29b-41d4-a716-446655440001");
+        assertResult.bodyJson().extractingPath("$[?(@.username=='user1')].email").asList()
+                .singleElement().isEqualTo("user1@example.com");
         
         // パスワードハッシュは@JsonIgnoreで除外されているため、レスポンスに含まれないことを確認
         assertResult.bodyText().doesNotContain("passwordHash");
