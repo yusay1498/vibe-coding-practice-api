@@ -6,6 +6,8 @@ import com.yusay.user.api.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @Transactional(readOnly = true)
 public class UserService {
@@ -19,5 +21,9 @@ public class UserService {
     public User lookup(String id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
+    }
+
+    public List<User> list() {
+        return userRepository.findAll();
     }
 }

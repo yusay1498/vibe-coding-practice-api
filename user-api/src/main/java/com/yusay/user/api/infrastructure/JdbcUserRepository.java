@@ -5,6 +5,7 @@ import com.yusay.user.api.domain.repository.UserRepository;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -37,5 +38,15 @@ public class JdbcUserRepository implements UserRepository {
                 """)
                 .param("id", id)
                 .update();
+                       
+    public List<User> findAll() {
+        return jdbcClient.sql("""
+                    SELECT id, username, email, password_hash, enabled,
+                           account_non_expired, account_non_locked, credentials_non_expired,
+                           created_at, updated_at
+                    FROM users
+                """)
+                .query(User.class)
+                .list();
     }
 }

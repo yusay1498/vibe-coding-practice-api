@@ -12,6 +12,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -160,6 +161,18 @@ class JdbcUserRepositoryTest {
     }
 
     @Test
+    @DisplayName("findAll: ユーザーが存在しない場合、空のリストを返す")
+    void findAll_whenNoUsersExist_returnsEmptyList() {
+        // Given: ユーザーが存在しない状態
+
+        // When: findAllを実行
+        List<User> result = jdbcUserRepository.findAll();
+
+        // Then: 空のリストが返されることを確認
+        assertThat(result).isEmpty();
+    }
+
+    @Test
     @Sql(statements = {
             """
             INSERT INTO users (id, username, email, password_hash, enabled,
@@ -191,6 +204,25 @@ class JdbcUserRepositoryTest {
         // When & Then: deleteByIdを実行しても例外がスローされないことを確認
         org.assertj.core.api.Assertions.assertThatNoException()
                 .isThrownBy(() -> jdbcUserRepository.deleteById(nonExistentUserId));
+            VALUES ('test-user-id-001', 'testuser', 'test@example.com', '$2a$10$test-password-hash',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """
+    })
+    @DisplayName("findAll: ユーザーが1件存在する場合、そのユーザーを含むリストを返す")
+    void findAll_whenOneUserExists_returnsListWithOneUser() {
+        // Given: テストユーザーを1件挿入
+        String userId = "test-user-id-001";
+        String username = "testuser";
+        String email = "test@example.com";
+
+        // When: findAllを実行
+        List<User> result = jdbcUserRepository.findAll();
+
+        // Then: 1件のユーザーが取得できることを確認
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).id()).isEqualTo(userId);
+        assertThat(result.get(0).username()).isEqualTo(username);
+        assertThat(result.get(0).email()).isEqualTo(email);
     }
 
     @Test
@@ -200,6 +232,7 @@ class JdbcUserRepositoryTest {
                                account_non_expired, account_non_locked, credentials_non_expired,
                                created_at, updated_at)
             VALUES ('test-delete-user-002', 'user1', 'user1@example.com', '$2a$10$hash1',
+            VALUES ('test-user-id-001', 'user1', 'user1@example.com', '$2a$10$hash1',
                     true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
             """,
             """
@@ -248,5 +281,32 @@ class JdbcUserRepositoryTest {
         // When & Then: deleteByIdを実行しても例外がスローされないことを確認
         org.assertj.core.api.Assertions.assertThatNoException()
                 .isThrownBy(() -> jdbcUserRepository.deleteById(emptyUserId));
+            VALUES ('test-user-id-002', 'user2', 'user2@example.com', '$2a$10$hash2',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """,
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
+            VALUES ('test-user-id-003', 'user3', 'user3@example.com', '$2a$10$hash3',
+                    false, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """
+    })
+    @DisplayName("findAll: 複数のユーザーが存在する場合、全てのユーザーを含むリストを返す")
+    void findAll_whenMultipleUsersExist_returnsListWithAllUsers() {
+        // Given: テストユーザーを3件挿入（1件はenabled=false）
+
+        // When: findAllを実行
+        List<User> result = jdbcUserRepository.findAll();
+
+        // Then: 3件のユーザーが取得できることを確認
+        assertThat(result).hasSize(3);
+        assertThat(result).extracting(User::id)
+                .containsExactlyInAnyOrder("test-user-id-001", "test-user-id-002", "test-user-id-003");
+        assertThat(result).extracting(User::username)
+                .containsExactlyInAnyOrder("user1", "user2", "user3");
+
+        // enabledがfalseのユーザーも含まれることを確認
+        assertThat(result).anyMatch(user -> !user.enabled());
     }
 }
