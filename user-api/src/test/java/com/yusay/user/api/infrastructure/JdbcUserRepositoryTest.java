@@ -12,7 +12,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -295,14 +294,14 @@ class JdbcUserRepositoryTest {
                     true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
             """
     })
-    @DisplayName("save: 既存ユーザーの一部の項目のみを更新できる")
-    void save_whenExistingUserPartialUpdate_updatesOnlySpecifiedFields() {
+    @DisplayName("save: 既存ユーザーを更新する際、一部のフィールドのみ変更できる")
+    void save_whenExistingUser_updatesSpecifiedFields() {
         // Given: 既存のユーザーを取得
         String userId = "update-test-user-id";
         Optional<User> existingUser = jdbcUserRepository.findById(userId);
         assertThat(existingUser).isPresent();
 
-        // Given: 一部の項目を変更したユーザー（usernameとemailのみ変更）
+        // Given: usernameとemailのみを変更したUserオブジェクトを作成
         User updatedUser = new User(
                 userId,
                 "changedusername",
@@ -319,7 +318,7 @@ class JdbcUserRepositoryTest {
         // When: saveを実行
         User savedUser = jdbcUserRepository.save(updatedUser);
 
-        // Then: usernameとemailが更新されることを確認
+        // Then: usernameとemailが更新され、他のフィールドも保持されることを確認
         assertThat(savedUser.username()).isEqualTo("changedusername");
         assertThat(savedUser.email()).isEqualTo("changed@example.com");
         assertThat(savedUser.passwordHash()).isEqualTo("$2a$10$original-hash");
