@@ -237,12 +237,22 @@ class JdbcUserRepositoryTest {
         assertThat(savedUser.accountNonExpired()).isFalse();
         assertThat(savedUser.accountNonLocked()).isFalse();
         assertThat(savedUser.credentialsNonExpired()).isFalse();
+        // created_atが保持されていることを確認（元の2024-01-01のまま）
+        assertThat(savedUser.createdAt()).isNotNull();
+        assertThat(savedUser.createdAt().getYear()).isEqualTo(2024);
+        assertThat(savedUser.createdAt().getMonthValue()).isEqualTo(1);
+        assertThat(savedUser.createdAt().getDayOfMonth()).isEqualTo(1);
+        // updated_atが更新されていることを確認
+        assertThat(savedUser.updatedAt()).isNotNull();
+        assertThat(savedUser.updatedAt()).isAfter(savedUser.createdAt());
 
         // Then: データベースから取得して更新を確認
         Optional<User> retrievedUser = jdbcUserRepository.findById(userId);
         assertThat(retrievedUser).isPresent();
         assertThat(retrievedUser.get().username()).isEqualTo("updateduser");
         assertThat(retrievedUser.get().email()).isEqualTo("updated@example.com");
+        // created_atが保持されていることを再確認
+        assertThat(retrievedUser.get().createdAt().getYear()).isEqualTo(2024);
     }
 
     @Test
