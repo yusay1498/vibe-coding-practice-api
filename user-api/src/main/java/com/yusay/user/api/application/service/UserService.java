@@ -29,9 +29,8 @@ public class UserService {
 
     @Transactional
     public void delete(String id) {
-        if (userRepository.findById(id).isEmpty()) {
-            throw new UserNotFoundException(id);
-        }
+        userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
         userRepository.deleteById(id);
     }
 }
