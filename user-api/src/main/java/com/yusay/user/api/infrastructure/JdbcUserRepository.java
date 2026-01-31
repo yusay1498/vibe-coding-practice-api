@@ -34,8 +34,8 @@ public class JdbcUserRepository implements UserRepository {
     public User save(User user) {
         LocalDateTime now = LocalDateTime.now();
         
-        // PostgreSQLのON CONFLICTを使用してupsert処理を実行
-        jdbcClient.sql("""
+        // PostgreSQLのON CONFLICTとRETURNINGを使用してupsert処理を実行
+        return jdbcClient.sql("""
                     INSERT INTO users (id, username, email, password_hash, enabled,
                                       account_non_expired, account_non_locked, credentials_non_expired,
                                       created_at, updated_at)
@@ -52,6 +52,9 @@ public class JdbcUserRepository implements UserRepository {
                         account_non_locked = EXCLUDED.account_non_locked,
                         credentials_non_expired = EXCLUDED.credentials_non_expired,
                         updated_at = EXCLUDED.updated_at
+                    RETURNING id, username, email, password_hash, enabled,
+                              account_non_expired, account_non_locked, credentials_non_expired,
+                              created_at, updated_at
                 """)
                 .param("id", user.id())
                 .param("username", user.username())
@@ -63,9 +66,7 @@ public class JdbcUserRepository implements UserRepository {
                 .param("credentialsNonExpired", user.credentialsNonExpired())
                 .param("createdAt", now)
                 .param("updatedAt", now)
-                .update();
-        
-        // 保存後のユーザーを取得して返す
-        return findById(user.id()).orElseThrow();
+                .query(User.class)
+                .single();
     }
 }
