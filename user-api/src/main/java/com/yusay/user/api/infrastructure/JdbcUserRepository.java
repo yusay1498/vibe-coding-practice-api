@@ -38,7 +38,9 @@ public class JdbcUserRepository implements UserRepository {
                 """)
                 .param("id", id)
                 .update();
-                       
+    }
+
+    @Override
     public List<User> findAll() {
         return jdbcClient.sql("""
                     SELECT id, username, email, password_hash, enabled,
