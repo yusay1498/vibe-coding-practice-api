@@ -28,4 +28,14 @@ public class JdbcUserRepository implements UserRepository {
                 .query(User.class)
                 .optional();
     }
+
+    @Override
+    public void deleteById(String id) {
+        jdbcClient.sql("""
+                    DELETE FROM users
+                    WHERE id = :id
+                """)
+                .param("id", id)
+                .update();
+    }
 }
