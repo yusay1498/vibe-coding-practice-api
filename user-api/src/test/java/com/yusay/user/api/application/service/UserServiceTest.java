@@ -67,8 +67,8 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("findAll()は全ユーザーのリストを返す")
-    void findAll_ReturnsAllUsers() {
+    @DisplayName("list()は全ユーザーのリストを返す")
+    void list_ReturnsAllUsers() {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserService userService = new UserService(userRepository);
@@ -103,7 +103,7 @@ class UserServiceTest {
         when(userRepository.findAll()).thenReturn(expectedUsers);
 
         // Act
-        List<User> actualUsers = userService.findAll();
+        List<User> actualUsers = userService.list();
 
         // Assert
         assertThat(actualUsers).isEqualTo(expectedUsers);
@@ -112,8 +112,8 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("findAll()はユーザーが存在しない場合に空のリストを返す")
-    void findAll_ReturnsEmptyList_WhenNoUsersExist() {
+    @DisplayName("list()はユーザーが存在しない場合に空のリストを返す")
+    void list_ReturnsEmptyList_WhenNoUsersExist() {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserService userService = new UserService(userRepository);
@@ -121,7 +121,7 @@ class UserServiceTest {
         when(userRepository.findAll()).thenReturn(List.of());
 
         // Act
-        List<User> actualUsers = userService.findAll();
+        List<User> actualUsers = userService.list();
 
         // Assert
         assertThat(actualUsers).isEmpty();
