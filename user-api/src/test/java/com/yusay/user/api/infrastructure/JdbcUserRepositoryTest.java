@@ -188,8 +188,11 @@ class JdbcUserRepositoryTest {
         String userId = "test-delete-user-001";
 
         // When: deleteByIdを実行
-        jdbcUserRepository.deleteById(userId);
+        int deletedCount = jdbcUserRepository.deleteById(userId);
 
+        // Then: 削除されたレコード数が1であることを確認
+        assertThat(deletedCount).isEqualTo(1);
+        
         // Then: ユーザーが削除されていることを確認
         Optional<User> result = jdbcUserRepository.findById(userId);
         assertThat(result).isEmpty();
@@ -201,9 +204,11 @@ class JdbcUserRepositoryTest {
         // Given: 存在しないユーザーID
         String nonExistentUserId = "non-existent-user-id";
 
-        // When & Then: deleteByIdを実行しても例外がスローされないことを確認
-        org.assertj.core.api.Assertions.assertThatNoException()
-                .isThrownBy(() -> jdbcUserRepository.deleteById(nonExistentUserId));
+        // When: deleteByIdを実行
+        int deletedCount = jdbcUserRepository.deleteById(nonExistentUserId);
+
+        // Then: 削除されたレコード数が0であることを確認
+        assertThat(deletedCount).isEqualTo(0);
     }
 
     @Test
@@ -230,7 +235,10 @@ class JdbcUserRepositoryTest {
         String userId2 = "test-delete-user-003";
 
         // When: userId1のユーザーを削除
-        jdbcUserRepository.deleteById(userId1);
+        int deletedCount = jdbcUserRepository.deleteById(userId1);
+
+        // Then: 削除されたレコード数が1であることを確認
+        assertThat(deletedCount).isEqualTo(1);
 
         // Then: userId1のユーザーは削除され、userId2のユーザーは存在することを確認
         Optional<User> result1 = jdbcUserRepository.findById(userId1);
@@ -247,9 +255,11 @@ class JdbcUserRepositoryTest {
         // Given: nullのユーザーID
         String nullUserId = null;
 
-        // When & Then: deleteByIdを実行しても例外がスローされないことを確認
-        org.assertj.core.api.Assertions.assertThatNoException()
-                .isThrownBy(() -> jdbcUserRepository.deleteById(nullUserId));
+        // When: deleteByIdを実行
+        int deletedCount = jdbcUserRepository.deleteById(nullUserId);
+
+        // Then: 削除されたレコード数が0であることを確認
+        assertThat(deletedCount).isEqualTo(0);
     }
 
     @Test
@@ -258,9 +268,11 @@ class JdbcUserRepositoryTest {
         // Given: 空文字列のユーザーID
         String emptyUserId = "";
 
-        // When & Then: deleteByIdを実行しても例外がスローされないことを確認
-        org.assertj.core.api.Assertions.assertThatNoException()
-                .isThrownBy(() -> jdbcUserRepository.deleteById(emptyUserId));
+        // When: deleteByIdを実行
+        int deletedCount = jdbcUserRepository.deleteById(emptyUserId);
+
+        // Then: 削除されたレコード数が0であることを確認
+        assertThat(deletedCount).isEqualTo(0);
     }
 
     @Test

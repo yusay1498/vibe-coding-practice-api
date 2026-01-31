@@ -127,4 +127,38 @@ class UserServiceTest {
         assertThat(actualUsers).isEmpty();
         verify(userRepository).findAll();
     }
+
+    @Test
+    @DisplayName("delete()は存在するユーザーを削除する")
+    void delete_DeletesUser_WhenUserExists() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserService userService = new UserService(userRepository);
+        
+        String userId = "test-user-id";
+        when(userRepository.deleteById(userId)).thenReturn(1);
+
+        // Act
+        userService.delete(userId);
+
+        // Assert
+        verify(userRepository).deleteById(userId);
+    }
+
+    @Test
+    @DisplayName("delete()はユーザーが見つからない場合にUserNotFoundExceptionをスローする")
+    void delete_ThrowsUserNotFoundException_WhenUserNotFound() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserService userService = new UserService(userRepository);
+        
+        String userId = "non-existent-id";
+        when(userRepository.deleteById(userId)).thenReturn(0);
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.delete(userId))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessage("User not found: " + userId);
+        verify(userRepository).deleteById(userId);
+    }
 }
