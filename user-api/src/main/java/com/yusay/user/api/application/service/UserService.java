@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
-@Transactional(readOnly = true)
+@Transactional
 public class UserService {
     
     private final UserRepository userRepository;
@@ -27,7 +27,6 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    @Transactional
     public void delete(String id) {
         int deletedCount = userRepository.deleteById(id);
         if (deletedCount == 0) {
