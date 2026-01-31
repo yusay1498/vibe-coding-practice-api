@@ -51,7 +51,7 @@ public class JdbcUserRepository implements UserRepository {
                         account_non_expired = EXCLUDED.account_non_expired,
                         account_non_locked = EXCLUDED.account_non_locked,
                         credentials_non_expired = EXCLUDED.credentials_non_expired,
-                        updated_at = :updatedAt
+                        updated_at = EXCLUDED.updated_at
                 """)
                 .param("id", user.id())
                 .param("username", user.username())
