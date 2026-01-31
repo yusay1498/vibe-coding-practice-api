@@ -178,6 +178,97 @@ class JdbcUserRepositoryTest {
             INSERT INTO users (id, username, email, password_hash, enabled,
                                account_non_expired, account_non_locked, credentials_non_expired,
                                created_at, updated_at)
+            VALUES ('test-delete-user-001', 'deleteuser', 'delete@example.com', '$2a$10$test-hash',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """
+    })
+    @DisplayName("deleteById: ユーザーが存在する場合、削除される")
+    void deleteById_whenUserExists_deletesUser() {
+        // Given: テストユーザーを挿入
+        String userId = "test-delete-user-001";
+
+        // When: deleteByIdを実行
+        jdbcUserRepository.deleteById(userId);
+
+        // Then: ユーザーが削除されていることを確認
+        Optional<User> result = jdbcUserRepository.findById(userId);
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("deleteById: ユーザーが存在しない場合、例外をスローしない")
+    void deleteById_whenUserDoesNotExist_doesNotThrowException() {
+        // Given: 存在しないユーザーID
+        String nonExistentUserId = "non-existent-user-id";
+
+        // When & Then: deleteByIdを実行しても例外がスローされないことを確認
+        org.assertj.core.api.Assertions.assertThatNoException()
+                .isThrownBy(() -> jdbcUserRepository.deleteById(nonExistentUserId));
+    }
+
+    @Test
+    @Sql(statements = {
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
+            VALUES ('test-delete-user-002', 'user1', 'user1@example.com', '$2a$10$hash1',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """,
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
+            VALUES ('test-delete-user-003', 'user2', 'user2@example.com', '$2a$10$hash2',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """
+    })
+    @DisplayName("deleteById: 複数のユーザーが存在する場合、指定したIDのユーザーのみを削除する")
+    void deleteById_whenMultipleUsersExist_deletesOnlySpecifiedUser() {
+        // Given: 複数のテストユーザーを挿入
+        String userId1 = "test-delete-user-002";
+        String userId2 = "test-delete-user-003";
+
+        // When: userId1のユーザーを削除
+        jdbcUserRepository.deleteById(userId1);
+
+        // Then: userId1のユーザーは削除され、userId2のユーザーは存在することを確認
+        Optional<User> result1 = jdbcUserRepository.findById(userId1);
+        Optional<User> result2 = jdbcUserRepository.findById(userId2);
+
+        assertThat(result1).isEmpty();
+        assertThat(result2).isPresent();
+        assertThat(result2.get().id()).isEqualTo(userId2);
+    }
+
+    @Test
+    @DisplayName("deleteById: nullのIDを渡した場合、例外をスローしない")
+    void deleteById_whenIdIsNull_doesNotThrowException() {
+        // Given: nullのユーザーID
+        String nullUserId = null;
+
+        // When & Then: deleteByIdを実行しても例外がスローされないことを確認
+        org.assertj.core.api.Assertions.assertThatNoException()
+                .isThrownBy(() -> jdbcUserRepository.deleteById(nullUserId));
+    }
+
+    @Test
+    @DisplayName("deleteById: 空文字列のIDを渡した場合、例外をスローしない")
+    void deleteById_whenIdIsEmpty_doesNotThrowException() {
+        // Given: 空文字列のユーザーID
+        String emptyUserId = "";
+
+        // When & Then: deleteByIdを実行しても例外がスローされないことを確認
+        org.assertj.core.api.Assertions.assertThatNoException()
+                .isThrownBy(() -> jdbcUserRepository.deleteById(emptyUserId));
+    }
+
+    @Test
+    @Sql(statements = {
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
             VALUES ('test-user-id-001', 'testuser', 'test@example.com', '$2a$10$test-password-hash',
                     true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
             """

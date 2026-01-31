@@ -31,6 +31,16 @@ public class JdbcUserRepository implements UserRepository {
     }
 
     @Override
+    public void deleteById(String id) {
+        jdbcClient.sql("""
+                    DELETE FROM users
+                    WHERE id = :id
+                """)
+                .param("id", id)
+                .update();
+    }
+
+    @Override
     public List<User> findAll() {
         return jdbcClient.sql("""
                     SELECT id, username, email, password_hash, enabled,
