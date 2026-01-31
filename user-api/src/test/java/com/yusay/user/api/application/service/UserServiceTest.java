@@ -13,6 +13,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -126,5 +127,54 @@ class UserServiceTest {
         // Assert
         assertThat(actualUsers).isEmpty();
         verify(userRepository).findAll();
+    }
+
+    @Test
+    @DisplayName("delete()は存在するユーザーを削除する")
+    void delete_DeletesUser_WhenUserExists() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserService userService = new UserService(userRepository);
+        
+        String userId = "test-user-id";
+        LocalDateTime fixedDateTime = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
+        User existingUser = new User(
+                userId,
+                "testuser",
+                "test@example.com",
+                "hashedPassword",
+                true,
+                true,
+                true,
+                true,
+                fixedDateTime,
+                fixedDateTime
+        );
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+
+        // Act
+        userService.delete(userId);
+
+        // Assert
+        verify(userRepository).findById(userId);
+        verify(userRepository).deleteById(userId);
+    }
+
+    @Test
+    @DisplayName("delete()はユーザーが見つからない場合にUserNotFoundExceptionをスローする")
+    void delete_ThrowsUserNotFoundException_WhenUserNotFound() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserService userService = new UserService(userRepository);
+        
+        String userId = "non-existent-id";
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.delete(userId))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessage("User not found: " + userId);
+        verify(userRepository).findById(userId);
+        verify(userRepository, never()).deleteById(userId);
     }
 }

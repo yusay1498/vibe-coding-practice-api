@@ -26,4 +26,12 @@ public class UserService {
     public List<User> list() {
         return userRepository.findAll();
     }
+
+    @Transactional
+    public void delete(String id) {
+        if (userRepository.findById(id).isEmpty()) {
+            throw new UserNotFoundException(id);
+        }
+        userRepository.deleteById(id);
+    }
 }
