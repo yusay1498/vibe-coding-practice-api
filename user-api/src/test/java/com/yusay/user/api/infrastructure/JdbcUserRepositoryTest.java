@@ -12,6 +12,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -157,5 +158,160 @@ class JdbcUserRepositoryTest {
 
         // Then: 空のOptionalが返されることを確認
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("save: 新規ユーザーを保存できる")
+    void save_whenNewUser_insertsUser() {
+        // Given: 新規ユーザー
+        String userId = "new-user-id-001";
+        User newUser = new User(
+                userId,
+                "newuser",
+                "newuser@example.com",
+                "$2a$10$new-password-hash",
+                true,
+                true,
+                true,
+                true,
+                null,  // created_atはsave時に設定される
+                null   // updated_atはsave時に設定される
+        );
+
+        // When: saveを実行
+        User savedUser = jdbcUserRepository.save(newUser);
+
+        // Then: ユーザーが保存されることを確認
+        assertThat(savedUser).isNotNull();
+        assertThat(savedUser.id()).isEqualTo(userId);
+        assertThat(savedUser.username()).isEqualTo("newuser");
+        assertThat(savedUser.email()).isEqualTo("newuser@example.com");
+        assertThat(savedUser.passwordHash()).isEqualTo("$2a$10$new-password-hash");
+        assertThat(savedUser.enabled()).isTrue();
+        assertThat(savedUser.createdAt()).isNotNull();
+        assertThat(savedUser.updatedAt()).isNotNull();
+
+        // Then: データベースから取得できることを確認
+        Optional<User> retrievedUser = jdbcUserRepository.findById(userId);
+        assertThat(retrievedUser).isPresent();
+        assertThat(retrievedUser.get().username()).isEqualTo("newuser");
+    }
+
+    @Test
+    @Sql(statements = {
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
+            VALUES ('existing-user-id', 'existinguser', 'existing@example.com', '$2a$10$existing-hash',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """
+    })
+    @DisplayName("save: 既存ユーザーを更新できる")
+    void save_whenExistingUser_updatesUser() {
+        // Given: 既存のユーザーIDで更新内容を作成
+        String userId = "existing-user-id";
+        User updatedUser = new User(
+                userId,
+                "updateduser",
+                "updated@example.com",
+                "$2a$10$updated-password-hash",
+                false,
+                false,
+                false,
+                false,
+                null,  // created_atは変更されない
+                null   // updated_atはsave時に更新される
+        );
+
+        // When: saveを実行
+        User savedUser = jdbcUserRepository.save(updatedUser);
+
+        // Then: ユーザーが更新されることを確認
+        assertThat(savedUser).isNotNull();
+        assertThat(savedUser.id()).isEqualTo(userId);
+        assertThat(savedUser.username()).isEqualTo("updateduser");
+        assertThat(savedUser.email()).isEqualTo("updated@example.com");
+        assertThat(savedUser.passwordHash()).isEqualTo("$2a$10$updated-password-hash");
+        assertThat(savedUser.enabled()).isFalse();
+        assertThat(savedUser.accountNonExpired()).isFalse();
+        assertThat(savedUser.accountNonLocked()).isFalse();
+        assertThat(savedUser.credentialsNonExpired()).isFalse();
+
+        // Then: データベースから取得して更新を確認
+        Optional<User> retrievedUser = jdbcUserRepository.findById(userId);
+        assertThat(retrievedUser).isPresent();
+        assertThat(retrievedUser.get().username()).isEqualTo("updateduser");
+        assertThat(retrievedUser.get().email()).isEqualTo("updated@example.com");
+    }
+
+    @Test
+    @DisplayName("save: enabledがfalseの新規ユーザーを保存できる")
+    void save_whenNewDisabledUser_insertsUser() {
+        // Given: enabledがfalseの新規ユーザー
+        String userId = "disabled-new-user-id";
+        User newUser = new User(
+                userId,
+                "disableduser",
+                "disabled@example.com",
+                "$2a$10$disabled-hash",
+                false,
+                true,
+                true,
+                true,
+                null,
+                null
+        );
+
+        // When: saveを実行
+        User savedUser = jdbcUserRepository.save(newUser);
+
+        // Then: enabledがfalseで保存されることを確認
+        assertThat(savedUser.enabled()).isFalse();
+
+        // Then: データベースから取得してenabledがfalseを確認
+        Optional<User> retrievedUser = jdbcUserRepository.findById(userId);
+        assertThat(retrievedUser).isPresent();
+        assertThat(retrievedUser.get().enabled()).isFalse();
+    }
+
+    @Test
+    @Sql(statements = {
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
+            VALUES ('update-test-user-id', 'originaluser', 'original@example.com', '$2a$10$original-hash',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """
+    })
+    @DisplayName("save: 既存ユーザーの一部の項目のみを更新できる")
+    void save_whenExistingUserPartialUpdate_updatesOnlySpecifiedFields() {
+        // Given: 既存のユーザーを取得
+        String userId = "update-test-user-id";
+        Optional<User> existingUser = jdbcUserRepository.findById(userId);
+        assertThat(existingUser).isPresent();
+
+        // Given: 一部の項目を変更したユーザー（usernameとemailのみ変更）
+        User updatedUser = new User(
+                userId,
+                "changedusername",
+                "changed@example.com",
+                existingUser.get().passwordHash(),
+                existingUser.get().enabled(),
+                existingUser.get().accountNonExpired(),
+                existingUser.get().accountNonLocked(),
+                existingUser.get().credentialsNonExpired(),
+                existingUser.get().createdAt(),
+                existingUser.get().updatedAt()
+        );
+
+        // When: saveを実行
+        User savedUser = jdbcUserRepository.save(updatedUser);
+
+        // Then: usernameとemailが更新されることを確認
+        assertThat(savedUser.username()).isEqualTo("changedusername");
+        assertThat(savedUser.email()).isEqualTo("changed@example.com");
+        assertThat(savedUser.passwordHash()).isEqualTo("$2a$10$original-hash");
     }
 }
