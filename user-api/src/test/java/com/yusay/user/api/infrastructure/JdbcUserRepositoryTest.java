@@ -189,9 +189,8 @@ class JdbcUserRepositoryTest {
         String nonExistentUserId = "non-existent-user-id";
 
         // When & Then: deleteByIdを実行しても例外がスローされないことを確認
-        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() ->
-                jdbcUserRepository.deleteById(nonExistentUserId)
-        );
+        org.assertj.core.api.Assertions.assertThatNoException()
+                .isThrownBy(() -> jdbcUserRepository.deleteById(nonExistentUserId));
     }
 
     @Test
@@ -236,9 +235,8 @@ class JdbcUserRepositoryTest {
         String nullUserId = null;
 
         // When & Then: deleteByIdを実行しても例外がスローされないことを確認
-        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() ->
-                jdbcUserRepository.deleteById(nullUserId)
-        );
+        org.assertj.core.api.Assertions.assertThatNoException()
+                .isThrownBy(() -> jdbcUserRepository.deleteById(nullUserId));
     }
 
     @Test
@@ -248,8 +246,7 @@ class JdbcUserRepositoryTest {
         String emptyUserId = "";
 
         // When & Then: deleteByIdを実行しても例外がスローされないことを確認
-        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() ->
-                jdbcUserRepository.deleteById(emptyUserId)
-        );
+        org.assertj.core.api.Assertions.assertThatNoException()
+                .isThrownBy(() -> jdbcUserRepository.deleteById(emptyUserId));
     }
 }
