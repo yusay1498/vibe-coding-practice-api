@@ -12,6 +12,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -254,9 +255,10 @@ class JdbcUserRepositoryTest {
         assertThat(savedUser.createdAt().getYear()).isEqualTo(2024);
         assertThat(savedUser.createdAt().getMonthValue()).isEqualTo(1);
         assertThat(savedUser.createdAt().getDayOfMonth()).isEqualTo(1);
-        // updated_atが更新されていることを確認
+        // updated_atが更新されていることを確認（元の2024-01-01より後であることを確認）
         assertThat(savedUser.updatedAt()).isNotNull();
-        assertThat(savedUser.updatedAt()).isAfter(savedUser.createdAt());
+        LocalDateTime originalUpdatedAt = LocalDateTime.of(2024, 1, 1, 0, 0, 0);
+        assertThat(savedUser.updatedAt()).isAfter(originalUpdatedAt);
 
         // Then: データベースから取得して更新を確認
         Optional<User> retrievedUser = jdbcUserRepository.findById(userId);
@@ -410,7 +412,7 @@ class JdbcUserRepositoryTest {
                     true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
             """
     })
-    @DisplayName("save: 既存ユーザーを更新する際、一部のフィールドのみ変更できる")
+    @DisplayName("save: 既存ユーザー更新時に username/email のみ変更され、他のフィールドは保持される")
     void save_whenExistingUser_updatesSpecifiedFields() {
         // Given: 既存のユーザーを取得
         String userId = "update-test-user-id";

@@ -45,34 +45,41 @@ public class JdbcUserRepository implements UserRepository {
 
     @Override
     public User save(User user) {
+        // データ保証のため、既存ユーザーかどうかを確認
+        Optional<User> existingUser = findById(user.id());
         LocalDateTime now = LocalDateTime.now();
         
-        // 汎用的なupsert処理: まずUPDATEを試行し、更新されなければINSERTを実行
-        int updatedRows = jdbcClient.sql("""
-                    UPDATE users
-                    SET username = :username,
-                        email = :email,
-                        password_hash = :passwordHash,
-                        enabled = :enabled,
-                        account_non_expired = :accountNonExpired,
-                        account_non_locked = :accountNonLocked,
-                        credentials_non_expired = :credentialsNonExpired,
-                        updated_at = :updatedAt
-                    WHERE id = :id
-                """)
-                .param("id", user.id())
-                .param("username", user.username())
-                .param("email", user.email())
-                .param("passwordHash", user.passwordHash())
-                .param("enabled", user.enabled())
-                .param("accountNonExpired", user.accountNonExpired())
-                .param("accountNonLocked", user.accountNonLocked())
-                .param("credentialsNonExpired", user.credentialsNonExpired())
-                .param("updatedAt", now)
-                .update();
-        
-        if (updatedRows == 0) {
-            // 更新されなかった場合は新規作成
+        if (existingUser.isPresent()) {
+            // 既存ユーザーの場合はUPDATE
+            jdbcClient.sql("""
+                        UPDATE users
+                        SET username = :username,
+                            email = :email,
+                            password_hash = :passwordHash,
+                            enabled = :enabled,
+                            account_non_expired = :accountNonExpired,
+                            account_non_locked = :accountNonLocked,
+                            credentials_non_expired = :credentialsNonExpired,
+                            updated_at = :updatedAt
+                        WHERE id = :id
+                    """)
+                    .param("id", user.id())
+                    .param("username", user.username())
+                    .param("email", user.email())
+                    .param("passwordHash", user.passwordHash())
+                    .param("enabled", user.enabled())
+                    .param("accountNonExpired", user.accountNonExpired())
+                    .param("accountNonLocked", user.accountNonLocked())
+                    .param("credentialsNonExpired", user.credentialsNonExpired())
+                    .param("updatedAt", now)
+                    .update();
+        } else {
+            // 新規ユーザーの場合はINSERT
+            // IDが指定されていない場合はUUIDを生成
+            String id = (user.id() != null && !user.id().isEmpty()) 
+                    ? user.id() 
+                    : java.util.UUID.randomUUID().toString();
+            
             jdbcClient.sql("""
                         INSERT INTO users (id, username, email, password_hash, enabled,
                                           account_non_expired, account_non_locked, credentials_non_expired,
@@ -81,7 +88,7 @@ public class JdbcUserRepository implements UserRepository {
                                 :accountNonExpired, :accountNonLocked, :credentialsNonExpired,
                                 :createdAt, :updatedAt)
                     """)
-                    .param("id", user.id())
+                    .param("id", id)
                     .param("username", user.username())
                     .param("email", user.email())
                     .param("passwordHash", user.passwordHash())
@@ -92,6 +99,9 @@ public class JdbcUserRepository implements UserRepository {
                     .param("createdAt", now)
                     .param("updatedAt", now)
                     .update();
+            
+            // IDが生成された場合は、そのIDで返す
+            return findById(id).orElseThrow();
         }
         
         // 保存後のユーザーを取得して返す
