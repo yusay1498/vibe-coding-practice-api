@@ -557,4 +557,88 @@ class JdbcUserRepositoryTest {
         // enabledがfalseのユーザーも含まれることを確認
         assertThat(result).anyMatch(user -> !user.enabled());
     }
+
+    @Test
+    @DisplayName("deleteAll: ユーザーが存在しない場合、削除されたレコード数0を返す")
+    void deleteAll_whenNoUsersExist_returnsZero() {
+        // Given: ユーザーが存在しない状態
+
+        // When: deleteAllを実行
+        int deletedCount = jdbcUserRepository.deleteAll();
+
+        // Then: 削除されたレコード数が0であることを確認
+        assertThat(deletedCount).isEqualTo(0);
+        
+        // Then: findAllで確認しても空であることを確認
+        List<User> result = jdbcUserRepository.findAll();
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @Sql(statements = {
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
+            VALUES ('test-deleteall-user-001', 'user1', 'user1@example.com', '$2a$10$hash1',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """
+    })
+    @DisplayName("deleteAll: ユーザーが1件存在する場合、全て削除される")
+    void deleteAll_whenOneUserExists_deletesAllUsers() {
+        // Given: テストユーザーを1件挿入
+
+        // When: deleteAllを実行
+        int deletedCount = jdbcUserRepository.deleteAll();
+
+        // Then: 削除されたレコード数が1であることを確認
+        assertThat(deletedCount).isEqualTo(1);
+        
+        // Then: 全てのユーザーが削除されていることを確認
+        List<User> result = jdbcUserRepository.findAll();
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @Sql(statements = {
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
+            VALUES ('test-deleteall-user-002', 'user1', 'user1@example.com', '$2a$10$hash1',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """,
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
+            VALUES ('test-deleteall-user-003', 'user2', 'user2@example.com', '$2a$10$hash2',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """,
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
+            VALUES ('test-deleteall-user-004', 'user3', 'user3@example.com', '$2a$10$hash3',
+                    false, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """
+    })
+    @DisplayName("deleteAll: 複数のユーザーが存在する場合、全て削除される")
+    void deleteAll_whenMultipleUsersExist_deletesAllUsers() {
+        // Given: テストユーザーを3件挿入（1件はenabled=false）
+        
+        // Given: 削除前にユーザーが3件存在することを確認
+        List<User> beforeDelete = jdbcUserRepository.findAll();
+        assertThat(beforeDelete).hasSize(3);
+
+        // When: deleteAllを実行
+        int deletedCount = jdbcUserRepository.deleteAll();
+
+        // Then: 削除されたレコード数が3であることを確認
+        assertThat(deletedCount).isEqualTo(3);
+        
+        // Then: 全てのユーザーが削除されていることを確認
+        List<User> result = jdbcUserRepository.findAll();
+        assertThat(result).isEmpty();
+    }
 }
