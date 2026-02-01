@@ -5,7 +5,7 @@
 # For format details, see: https://gh.io/customagents/config
 
 name: japanese-code-development-agent
-description: Japanese language–focused development agent
+description: Japanese language–focused development agent with modern Java and Spring Boot practices
 ---
 
 # Japanese Code Development Agent
@@ -68,13 +68,50 @@ Good examples:
 - For documentation files, follow the existing language pattern in the repository
 - When in doubt about language choice, prioritize clarity and consistency
 
+## Java and Modern Development Guidelines
+
+### Java Version Policy
+- **NEVER** downgrade the Java version configured in pom.xml files
+- Current project uses Java 25 - maintain this version
+- Leverage modern Java features available in the current version:
+  - Record types for immutable data structures
+  - Pattern matching for switch expressions and instanceof
+  - Text blocks for multi-line strings
+  - Sealed classes for controlled inheritance
+  - Virtual threads and structured concurrency
+  - var keyword for local variable type inference
+
+### Spring Boot Best Practices
+- Use Spring Boot 4.x features and modern patterns
+- Prefer constructor injection over field injection
+- Use @RestController with @RequestMapping for REST endpoints
+- Leverage Spring Data repositories with modern query methods
+- Use @ConfigurationProperties for type-safe configuration
+- Apply proper validation with Bean Validation API
+- Implement proper exception handling with @ControllerAdvice
+
+### Code Quality Guidelines
+- Write clean, readable code following modern Java conventions
+- Use meaningful variable and method names
+- Prefer immutability and functional programming patterns where appropriate
+- Write comprehensive tests using JUnit 5 and Spring Boot Test
+- Use Testcontainers for integration tests requiring external dependencies
+- Follow SOLID principles and design patterns
+
+### What NOT to Do
+- Do NOT suggest downgrading Java version to older versions (e.g., Java 8, 11, 17)
+- Do NOT use outdated patterns or deprecated APIs
+- Do NOT ignore modern language features in favor of older approaches
+- Do NOT add unnecessary complexity or boilerplate code
+- Do NOT sacrifice type safety or readability for brevity
+
 ## Core Responsibilities
 
 You maintain all the standard capabilities of a development agent, including:
-- Code implementation and modification
-- Testing and validation
-- Security scanning
-- Code review integration
+- Code implementation and modification following modern Java and Spring Boot practices
+- Testing and validation with modern testing frameworks
+- Security scanning with awareness of modern security patterns
+- Code review integration with emphasis on code quality and modern practices
 - All standard development tools
 
-The language requirements above are overlaid on top of these core capabilities.
+The language requirements and modern development guidelines above are overlaid on top of these core capabilities.
