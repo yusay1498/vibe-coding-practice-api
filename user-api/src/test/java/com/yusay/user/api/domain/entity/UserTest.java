@@ -3,11 +3,12 @@ package com.yusay.user.api.domain.entity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
-import static java.time.temporal.ChronoUnit.SECONDS;
 
 @DisplayName("User エンティティのテスト")
 class UserTest {
@@ -15,6 +16,42 @@ class UserTest {
     @Test
     @DisplayName("create()メソッドは作成日時と更新日時を現在時刻に設定する")
     void create_SetsCreatedAtAndUpdatedAtToNow() {
+        // Arrange
+        Instant fixedInstant = Instant.parse("2024-01-01T10:00:00Z");
+        Clock fixedClock = Clock.fixed(fixedInstant, ZoneId.systemDefault());
+        LocalDateTime expectedTime = LocalDateTime.ofInstant(fixedInstant, ZoneId.systemDefault());
+        
+        // Act
+        User user = User.create(
+                "test-id",
+                "testuser",
+                "test@example.com",
+                "hashedPassword",
+                true,
+                true,
+                true,
+                true,
+                fixedClock
+        );
+        
+        // Assert
+        assertThat(user.id()).isEqualTo("test-id");
+        assertThat(user.username()).isEqualTo("testuser");
+        assertThat(user.email()).isEqualTo("test@example.com");
+        assertThat(user.passwordHash()).isEqualTo("hashedPassword");
+        assertThat(user.enabled()).isTrue();
+        assertThat(user.accountNonExpired()).isTrue();
+        assertThat(user.accountNonLocked()).isTrue();
+        assertThat(user.credentialsNonExpired()).isTrue();
+        
+        // 作成日時と更新日時が固定時刻に設定されていることを確認
+        assertThat(user.createdAt()).isEqualTo(expectedTime);
+        assertThat(user.updatedAt()).isEqualTo(expectedTime);
+    }
+
+    @Test
+    @DisplayName("create()メソッド（Clock引数なし）はシステムクロックを使用する")
+    void create_WithoutClock_UsesSystemClock() {
         // Arrange
         LocalDateTime beforeCreate = LocalDateTime.now();
         
@@ -33,28 +70,18 @@ class UserTest {
         LocalDateTime afterCreate = LocalDateTime.now();
         
         // Assert
-        assertThat(user.id()).isEqualTo("test-id");
-        assertThat(user.username()).isEqualTo("testuser");
-        assertThat(user.email()).isEqualTo("test@example.com");
-        assertThat(user.passwordHash()).isEqualTo("hashedPassword");
-        assertThat(user.enabled()).isTrue();
-        assertThat(user.accountNonExpired()).isTrue();
-        assertThat(user.accountNonLocked()).isTrue();
-        assertThat(user.credentialsNonExpired()).isTrue();
-        
-        // 作成日時と更新日時が現在時刻付近であることを確認（誤差1秒以内）
         assertThat(user.createdAt()).isNotNull();
         assertThat(user.createdAt()).isBetween(beforeCreate, afterCreate);
         assertThat(user.updatedAt()).isNotNull();
         assertThat(user.updatedAt()).isBetween(beforeCreate, afterCreate);
-        
-        // 作成日時と更新日時が同じであることを確認
-        assertThat(user.createdAt()).isCloseTo(user.updatedAt(), within(1, SECONDS));
     }
 
     @Test
     @DisplayName("create()メソッドはIDがnullでも動作する")
     void create_WorksWithNullId() {
+        // Arrange
+        Clock fixedClock = Clock.fixed(Instant.parse("2024-01-01T10:00:00Z"), ZoneId.systemDefault());
+        
         // Act
         User user = User.create(
                 null,
@@ -64,7 +91,8 @@ class UserTest {
                 true,
                 true,
                 true,
-                true
+                true,
+                fixedClock
         );
         
         // Assert
@@ -76,7 +104,7 @@ class UserTest {
 
     @Test
     @DisplayName("update()メソッドは更新日時を現在時刻に設定し、作成日時は保持する")
-    void update_UpdatesUpdatedAtAndPreservesCreatedAt() throws InterruptedException {
+    void update_UpdatesUpdatedAtAndPreservesCreatedAt() {
         // Arrange
         LocalDateTime originalCreatedAt = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
         LocalDateTime originalUpdatedAt = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
@@ -94,10 +122,10 @@ class UserTest {
                 originalUpdatedAt
         );
         
-        // 時間差を作るため少し待機
-        Thread.sleep(100);
-        
-        LocalDateTime beforeUpdate = LocalDateTime.now();
+        // 更新時刻を固定
+        Instant updateInstant = Instant.parse("2024-01-02T15:30:00Z");
+        Clock updateClock = Clock.fixed(updateInstant, ZoneId.systemDefault());
+        LocalDateTime expectedUpdatedAt = LocalDateTime.ofInstant(updateInstant, ZoneId.systemDefault());
         
         // Act
         User updatedUser = originalUser.update(
@@ -107,10 +135,9 @@ class UserTest {
                 false,
                 false,
                 false,
-                false
+                false,
+                updateClock
         );
-        
-        LocalDateTime afterUpdate = LocalDateTime.now();
         
         // Assert
         assertThat(updatedUser.id()).isEqualTo("test-id");
@@ -125,10 +152,49 @@ class UserTest {
         // 作成日時は元のまま保持されていることを確認
         assertThat(updatedUser.createdAt()).isEqualTo(originalCreatedAt);
         
-        // 更新日時が現在時刻に更新されていることを確認
-        assertThat(updatedUser.updatedAt()).isNotNull();
-        assertThat(updatedUser.updatedAt()).isBetween(beforeUpdate, afterUpdate);
+        // 更新日時が固定時刻に更新されていることを確認
+        assertThat(updatedUser.updatedAt()).isEqualTo(expectedUpdatedAt);
         assertThat(updatedUser.updatedAt()).isAfter(originalUpdatedAt);
+    }
+
+    @Test
+    @DisplayName("update()メソッド（Clock引数なし）はシステムクロックを使用する")
+    void update_WithoutClock_UsesSystemClock() {
+        // Arrange
+        LocalDateTime originalCreatedAt = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
+        LocalDateTime originalUpdatedAt = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
+        
+        User originalUser = new User(
+                "test-id",
+                "username",
+                "email@example.com",
+                "passwordHash",
+                true,
+                true,
+                true,
+                true,
+                originalCreatedAt,
+                originalUpdatedAt
+        );
+        
+        LocalDateTime beforeUpdate = LocalDateTime.now();
+        
+        // Act
+        User updatedUser = originalUser.update(
+                "newusername",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+        
+        LocalDateTime afterUpdate = LocalDateTime.now();
+        
+        // Assert
+        assertThat(updatedUser.updatedAt()).isBetween(beforeUpdate, afterUpdate);
+        assertThat(updatedUser.createdAt()).isEqualTo(originalCreatedAt);
     }
 
     @Test
@@ -151,6 +217,8 @@ class UserTest {
                 originalUpdatedAt
         );
         
+        Clock fixedClock = Clock.fixed(Instant.parse("2024-01-02T10:00:00Z"), ZoneId.systemDefault());
+        
         // Act - usernameのみ更新、他はnull
         User updatedUser = originalUser.update(
                 "newusername",
@@ -159,7 +227,8 @@ class UserTest {
                 null,  // enabledは更新しない
                 null,
                 null,
-                null
+                null,
+                fixedClock
         );
         
         // Assert
@@ -194,12 +263,12 @@ class UserTest {
                 originalUpdatedAt
         );
         
-        LocalDateTime beforeUpdate = LocalDateTime.now();
+        Instant updateInstant = Instant.parse("2024-01-02T15:00:00Z");
+        Clock updateClock = Clock.fixed(updateInstant, ZoneId.systemDefault());
+        LocalDateTime expectedUpdatedAt = LocalDateTime.ofInstant(updateInstant, ZoneId.systemDefault());
         
         // Act - 全てnull
-        User updatedUser = originalUser.update(null, null, null, null, null, null, null);
-        
-        LocalDateTime afterUpdate = LocalDateTime.now();
+        User updatedUser = originalUser.update(null, null, null, null, null, null, null, updateClock);
         
         // Assert - 全ての値が保持されている
         assertThat(updatedUser.id()).isEqualTo("test-id");
@@ -213,7 +282,7 @@ class UserTest {
         assertThat(updatedUser.createdAt()).isEqualTo(originalCreatedAt);
         
         // 更新日時のみ更新されている
-        assertThat(updatedUser.updatedAt()).isBetween(beforeUpdate, afterUpdate);
+        assertThat(updatedUser.updatedAt()).isEqualTo(expectedUpdatedAt);
         assertThat(updatedUser.updatedAt()).isAfter(originalUpdatedAt);
     }
 }
