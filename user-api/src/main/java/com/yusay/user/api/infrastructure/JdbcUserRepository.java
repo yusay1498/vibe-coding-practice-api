@@ -60,11 +60,6 @@ public class JdbcUserRepository implements UserRepository {
         
         if (existingUser.isPresent()) {
             // 既存ユーザーの場合はUPDATE
-            // updated_atの必須チェック
-            if (user.updatedAt() == null) {
-                throw new IllegalArgumentException("User.updatedAt must not be null for update operation");
-            }
-            
             jdbcClient.sql("""
                         UPDATE users
                         SET username = :username,
@@ -89,14 +84,6 @@ public class JdbcUserRepository implements UserRepository {
                     .update();
         } else {
             // 新規ユーザーの場合はINSERT
-            // created_atとupdated_atの必須チェック
-            if (user.createdAt() == null) {
-                throw new IllegalArgumentException("User.createdAt must not be null for insert operation");
-            }
-            if (user.updatedAt() == null) {
-                throw new IllegalArgumentException("User.updatedAt must not be null for insert operation");
-            }
-            
             final String finalUserId = userId;
             jdbcClient.sql("""
                         INSERT INTO users (id, username, email, password_hash, enabled,
