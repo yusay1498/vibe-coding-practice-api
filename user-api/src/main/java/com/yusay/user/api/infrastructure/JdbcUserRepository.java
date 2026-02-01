@@ -122,5 +122,13 @@ public class JdbcUserRepository implements UserRepository {
                 """)
                 .param("id", id)
                 .update();
-    }    
+    }
+    
+    @Override
+    public int deleteAll() {
+        return jdbcClient.sql("""
+                    DELETE FROM users
+                """)
+                .update();
+    }
 }
