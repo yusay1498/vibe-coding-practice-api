@@ -166,7 +166,7 @@ class JdbcUserRepositoryTest {
     void save_whenNewUser_insertsUser() {
         // Given: 新規ユーザー
         String userId = "new-user-id-001";
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.of(2024, 6, 15, 10, 30, 0);
         User newUser = new User(
                 userId,
                 "newuser",
@@ -190,8 +190,11 @@ class JdbcUserRepositoryTest {
         assertThat(savedUser.email()).isEqualTo("newuser@example.com");
         assertThat(savedUser.passwordHash()).isEqualTo("$2a$10$new-password-hash");
         assertThat(savedUser.enabled()).isTrue();
+        // タイムスタンプが正しく保存されていることを確認（秒単位で比較）
         assertThat(savedUser.createdAt()).isNotNull();
+        assertThat(savedUser.createdAt().withNano(0)).isEqualTo(now.withNano(0));
         assertThat(savedUser.updatedAt()).isNotNull();
+        assertThat(savedUser.updatedAt().withNano(0)).isEqualTo(now.withNano(0));
 
         // Then: データベースから取得できることを確認
         Optional<User> retrievedUser = jdbcUserRepository.findById(userId);
@@ -225,7 +228,7 @@ class JdbcUserRepositoryTest {
     void save_whenExistingUser_updatesUser() {
         // Given: 既存のユーザーIDで更新内容を作成
         String userId = "existing-user-id";
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime updatedTime = LocalDateTime.of(2024, 6, 15, 10, 30, 0);
         User updatedUser = new User(
                 userId,
                 "updateduser",
@@ -236,7 +239,7 @@ class JdbcUserRepositoryTest {
                 false,
                 false,
                 LocalDateTime.of(2024, 1, 1, 0, 0, 0),  // created_atは変更されない
-                now   // updated_atを設定
+                updatedTime   // updated_atを固定値で設定
         );
 
         // When: saveを実行
@@ -257,10 +260,9 @@ class JdbcUserRepositoryTest {
         assertThat(savedUser.createdAt().getYear()).isEqualTo(2024);
         assertThat(savedUser.createdAt().getMonthValue()).isEqualTo(1);
         assertThat(savedUser.createdAt().getDayOfMonth()).isEqualTo(1);
-        // updated_atが更新されていることを確認（元の2024-01-01より後であることを確認）
+        // updated_atが更新されていることを確認（設定した値になっている）
         assertThat(savedUser.updatedAt()).isNotNull();
-        LocalDateTime originalUpdatedAt = LocalDateTime.of(2024, 1, 1, 0, 0, 0);
-        assertThat(savedUser.updatedAt()).isAfter(originalUpdatedAt);
+        assertThat(savedUser.updatedAt().withNano(0)).isEqualTo(updatedTime.withNano(0));
 
         // Then: データベースから取得して更新を確認
         Optional<User> retrievedUser = jdbcUserRepository.findById(userId);
@@ -276,7 +278,7 @@ class JdbcUserRepositoryTest {
     void save_whenNewDisabledUser_insertsUser() {
         // Given: enabledがfalseの新規ユーザー
         String userId = "disabled-new-user-id";
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.of(2024, 6, 15, 10, 30, 0);
         User newUser = new User(
                 userId,
                 "disableduser",
@@ -300,6 +302,40 @@ class JdbcUserRepositoryTest {
         Optional<User> retrievedUser = jdbcUserRepository.findById(userId);
         assertThat(retrievedUser).isPresent();
         assertThat(retrievedUser.get().enabled()).isFalse();
+    }
+
+    @Test
+    @DisplayName("save: IDが未指定の場合、UUIDを自動生成して保存できる")
+    void save_whenIdIsNull_generatesUuidAndInsertsUser() {
+        // Given: IDが未指定の新規ユーザー
+        LocalDateTime now = LocalDateTime.of(2024, 6, 15, 10, 30, 0);
+        User newUser = new User(
+                null,  // IDを指定しない
+                "uuiduser",
+                "uuid@example.com",
+                "$2a$10$uuid-hash",
+                true,
+                true,
+                true,
+                true,
+                now,
+                now
+        );
+
+        // When: saveを実行
+        User savedUser = jdbcUserRepository.save(newUser);
+
+        // Then: UUIDが生成されて保存されることを確認
+        assertThat(savedUser).isNotNull();
+        assertThat(savedUser.id()).isNotNull();
+        assertThat(savedUser.id()).isNotEmpty();
+        assertThat(savedUser.username()).isEqualTo("uuiduser");
+        assertThat(savedUser.email()).isEqualTo("uuid@example.com");
+
+        // Then: データベースから取得できることを確認
+        Optional<User> retrievedUser = jdbcUserRepository.findById(savedUser.id());
+        assertThat(retrievedUser).isPresent();
+        assertThat(retrievedUser.get().username()).isEqualTo("uuiduser");
     }
 
     @Test
@@ -423,7 +459,7 @@ class JdbcUserRepositoryTest {
         assertThat(existingUser).isPresent();
 
         // Given: usernameとemailのみを変更し、updated_atを現在時刻に設定したUserオブジェクトを作成
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime updatedTime = LocalDateTime.of(2024, 6, 15, 10, 30, 0);
         User updatedUser = new User(
                 userId,
                 "changedusername",
@@ -434,7 +470,7 @@ class JdbcUserRepositoryTest {
                 existingUser.get().accountNonLocked(),
                 existingUser.get().credentialsNonExpired(),
                 existingUser.get().createdAt(),
-                now  // updated_atを現在時刻に設定
+                updatedTime  // updated_atを固定値で設定
         );
 
         // When: saveを実行
@@ -444,6 +480,13 @@ class JdbcUserRepositoryTest {
         assertThat(savedUser.username()).isEqualTo("changedusername");
         assertThat(savedUser.email()).isEqualTo("changed@example.com");
         assertThat(savedUser.passwordHash()).isEqualTo("$2a$10$original-hash");
+        assertThat(savedUser.enabled()).isTrue();
+        assertThat(savedUser.accountNonExpired()).isTrue();
+        assertThat(savedUser.accountNonLocked()).isTrue();
+        assertThat(savedUser.credentialsNonExpired()).isTrue();
+        assertThat(savedUser.createdAt().getYear()).isEqualTo(2024);
+        assertThat(savedUser.createdAt().getMonthValue()).isEqualTo(1);
+        assertThat(savedUser.createdAt().getDayOfMonth()).isEqualTo(1);
     }
 
     @Test

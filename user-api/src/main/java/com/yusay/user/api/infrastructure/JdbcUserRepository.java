@@ -45,11 +45,26 @@ public class JdbcUserRepository implements UserRepository {
 
     @Override
     public User save(User user) {
-        // データ保証のため、既存ユーザーかどうかを確認
-        Optional<User> existingUser = findById(user.id());
+        // IDが指定されているかチェック
+        String userId = user.id();
+        Optional<User> existingUser;
+        
+        if (userId == null || userId.isBlank()) {
+            // IDが未指定の場合は新規ユーザーとして扱う
+            existingUser = Optional.empty();
+            userId = UUID.randomUUID().toString();
+        } else {
+            // データ保証のため、既存ユーザーかどうかを確認
+            existingUser = findById(userId);
+        }
         
         if (existingUser.isPresent()) {
             // 既存ユーザーの場合はUPDATE
+            // updated_atの必須チェック
+            if (user.updatedAt() == null) {
+                throw new IllegalArgumentException("updatedAt must not be null for update operation");
+            }
+            
             jdbcClient.sql("""
                         UPDATE users
                         SET username = :username,
@@ -74,11 +89,15 @@ public class JdbcUserRepository implements UserRepository {
                     .update();
         } else {
             // 新規ユーザーの場合はINSERT
-            // IDが指定されていない場合はUUIDを生成
-            String id = (user.id() != null && !user.id().isEmpty()) 
-                    ? user.id() 
-                    : UUID.randomUUID().toString();
+            // created_atとupdated_atの必須チェック
+            if (user.createdAt() == null) {
+                throw new IllegalArgumentException("createdAt must not be null for insert operation");
+            }
+            if (user.updatedAt() == null) {
+                throw new IllegalArgumentException("updatedAt must not be null for insert operation");
+            }
             
+            final String finalUserId = userId;
             jdbcClient.sql("""
                         INSERT INTO users (id, username, email, password_hash, enabled,
                                           account_non_expired, account_non_locked, credentials_non_expired,
@@ -87,7 +106,7 @@ public class JdbcUserRepository implements UserRepository {
                                 :accountNonExpired, :accountNonLocked, :credentialsNonExpired,
                                 :createdAt, :updatedAt)
                     """)
-                    .param("id", id)
+                    .param("id", finalUserId)
                     .param("username", user.username())
                     .param("email", user.email())
                     .param("passwordHash", user.passwordHash())
@@ -100,8 +119,8 @@ public class JdbcUserRepository implements UserRepository {
                     .update();
             
             // IDが生成された場合は、そのIDで返す
-            return findById(id).orElseThrow(() -> 
-                    new IllegalStateException("Failed to retrieve user after insertion: " + id));
+            return findById(finalUserId).orElseThrow(() -> 
+                    new IllegalStateException("Failed to retrieve user after insertion: " + finalUserId));
         }
         
         // 保存後のユーザーを取得して返す
