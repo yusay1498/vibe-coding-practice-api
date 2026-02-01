@@ -44,6 +44,34 @@ public class JdbcUserRepository implements UserRepository {
     }
 
     @Override
+    public Optional<User> findByEmail(String email) {
+        return jdbcClient.sql("""
+                    SELECT id, username, email, password_hash, enabled,
+                           account_non_expired, account_non_locked, credentials_non_expired,
+                           created_at, updated_at
+                    FROM users
+                    WHERE email = :email
+                """)
+                .param("email", email)
+                .query(User.class)
+                .optional();
+    }
+
+    @Override
+    public Optional<User> findByUsername(String username) {
+        return jdbcClient.sql("""
+                    SELECT id, username, email, password_hash, enabled,
+                           account_non_expired, account_non_locked, credentials_non_expired,
+                           created_at, updated_at
+                    FROM users
+                    WHERE username = :username
+                """)
+                .param("username", username)
+                .query(User.class)
+                .optional();
+    }
+
+    @Override
     public User save(User user) {
         // IDが指定されているかチェック
         String userId = user.id();

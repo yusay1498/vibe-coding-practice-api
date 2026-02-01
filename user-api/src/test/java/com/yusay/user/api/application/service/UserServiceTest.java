@@ -1,8 +1,10 @@
 package com.yusay.user.api.application.service;
 
 import com.yusay.user.api.domain.entity.User;
+import com.yusay.user.api.domain.exception.DuplicateUserException;
 import com.yusay.user.api.domain.exception.UserNotFoundException;
 import com.yusay.user.api.domain.repository.UserRepository;
+import com.yusay.user.api.domain.service.UserDomainService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -12,18 +14,161 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class UserServiceTest {
 
     @Test
+    @DisplayName("create()は新規ユーザーを作成して返す")
+    void create_CreatesAndReturnsNewUser_WhenNoConflicts() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        UserService userService = new UserService(userRepository, userDomainService);
+        
+        String username = "newuser";
+        String email = "newuser@example.com";
+        String passwordHash = "hashedPassword";
+        LocalDateTime fixedDateTime = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
+        
+        User domainServiceUser = new User(
+                null,
+                username,
+                email,
+                passwordHash,
+                true,
+                true,
+                true,
+                true,
+                fixedDateTime,
+                fixedDateTime
+        );
+        
+        User savedUser = new User(
+                "generated-id",
+                username,
+                email,
+                passwordHash,
+                true,
+                true,
+                true,
+                true,
+                fixedDateTime,
+                fixedDateTime
+        );
+        
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+        when(userDomainService.createUser(null, username, email, passwordHash, true, true, true, true))
+                .thenReturn(domainServiceUser);
+        when(userRepository.save(domainServiceUser)).thenReturn(savedUser);
+
+        // Act
+        User result = userService.create(username, email, passwordHash);
+
+        // Assert
+        assertThat(result).isEqualTo(savedUser);
+        assertThat(result.id()).isEqualTo("generated-id");
+        assertThat(result.username()).isEqualTo(username);
+        assertThat(result.email()).isEqualTo(email);
+        
+        verify(userRepository).findByEmail(email);
+        verify(userRepository).findByUsername(username);
+        verify(userDomainService).createUser(null, username, email, passwordHash, true, true, true, true);
+        verify(userRepository).save(domainServiceUser);
+    }
+
+    @Test
+    @DisplayName("create()はメールアドレスが既に存在する場合にDuplicateUserExceptionをスローする")
+    void create_ThrowsDuplicateUserException_WhenEmailExists() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        UserService userService = new UserService(userRepository, userDomainService);
+        
+        String username = "newuser";
+        String email = "existing@example.com";
+        String passwordHash = "hashedPassword";
+        LocalDateTime fixedDateTime = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
+        
+        User existingUser = new User(
+                "existing-id",
+                "existinguser",
+                email,
+                "existingPasswordHash",
+                true,
+                true,
+                true,
+                true,
+                fixedDateTime,
+                fixedDateTime
+        );
+        
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(existingUser));
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.create(username, email, passwordHash))
+                .isInstanceOf(DuplicateUserException.class)
+                .hasMessage("Email already exists: " + email);
+        
+        verify(userRepository).findByEmail(email);
+        verify(userRepository, never()).findByUsername(anyString());
+        verify(userDomainService, never()).createUser(any(), any(), any(), any(), any(), any(), any(), any());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("create()はユーザー名が既に存在する場合にDuplicateUserExceptionをスローする")
+    void create_ThrowsDuplicateUserException_WhenUsernameExists() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        UserService userService = new UserService(userRepository, userDomainService);
+        
+        String username = "existinguser";
+        String email = "newuser@example.com";
+        String passwordHash = "hashedPassword";
+        LocalDateTime fixedDateTime = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
+        
+        User existingUser = new User(
+                "existing-id",
+                username,
+                "existing@example.com",
+                "existingPasswordHash",
+                true,
+                true,
+                true,
+                true,
+                fixedDateTime,
+                fixedDateTime
+        );
+        
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.create(username, email, passwordHash))
+                .isInstanceOf(DuplicateUserException.class)
+                .hasMessage("Username already exists: " + username);
+        
+        verify(userRepository).findByEmail(email);
+        verify(userRepository).findByUsername(username);
+        verify(userDomainService, never()).createUser(any(), any(), any(), any(), any(), any(), any(), any());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("lookup()はIDに対応するユーザーを返す")
     void lookup_ReturnsUser_WhenUserExists() {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
-        UserService userService = new UserService(userRepository);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        UserService userService = new UserService(userRepository, userDomainService);
         
         String userId = "test-user-id";
         LocalDateTime fixedDateTime = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
@@ -54,7 +199,8 @@ class UserServiceTest {
     void lookup_ThrowsUserNotFoundException_WhenUserNotFound() {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
-        UserService userService = new UserService(userRepository);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        UserService userService = new UserService(userRepository, userDomainService);
         
         String userId = "non-existent-id";
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
@@ -71,7 +217,8 @@ class UserServiceTest {
     void list_ReturnsAllUsers() {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
-        UserService userService = new UserService(userRepository);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        UserService userService = new UserService(userRepository, userDomainService);
         
         LocalDateTime fixedDateTime = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
         List<User> expectedUsers = List.of(
@@ -116,7 +263,8 @@ class UserServiceTest {
     void list_ReturnsEmptyList_WhenNoUsersExist() {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
-        UserService userService = new UserService(userRepository);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        UserService userService = new UserService(userRepository, userDomainService);
         
         when(userRepository.findAll()).thenReturn(List.of());
 
@@ -133,7 +281,8 @@ class UserServiceTest {
     void delete_DeletesUser_WhenUserExists() {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
-        UserService userService = new UserService(userRepository);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        UserService userService = new UserService(userRepository, userDomainService);
         
         String userId = "test-user-id";
         when(userRepository.deleteById(userId)).thenReturn(1);
@@ -150,7 +299,8 @@ class UserServiceTest {
     void delete_ThrowsUserNotFoundException_WhenUserNotFound() {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
-        UserService userService = new UserService(userRepository);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        UserService userService = new UserService(userRepository, userDomainService);
         
         String userId = "non-existent-id";
         when(userRepository.deleteById(userId)).thenReturn(0);
