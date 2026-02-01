@@ -1,5 +1,6 @@
-package com.yusay.user.api.domain.entity;
+package com.yusay.user.api.domain.service;
 
+import com.yusay.user.api.domain.entity.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -10,19 +11,21 @@ import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("User エンティティのテスト")
-class UserTest {
+@DisplayName("UserDomainService のテスト")
+class UserDomainServiceTest {
 
     @Test
-    @DisplayName("create()メソッドは作成日時と更新日時を現在時刻に設定する")
-    void create_SetsCreatedAtAndUpdatedAtToNow() {
+    @DisplayName("createUser()は作成日時と更新日時を現在時刻に設定する")
+    void createUser_SetsCreatedAtAndUpdatedAtToNow() {
         // Arrange
         Instant fixedInstant = Instant.parse("2024-01-01T10:00:00Z");
         Clock fixedClock = Clock.fixed(fixedInstant, ZoneId.systemDefault());
         LocalDateTime expectedTime = LocalDateTime.ofInstant(fixedInstant, ZoneId.systemDefault());
         
+        UserDomainService service = new UserDomainService(fixedClock);
+        
         // Act
-        User user = User.create(
+        User user = service.createUser(
                 "test-id",
                 "testuser",
                 "test@example.com",
@@ -30,8 +33,7 @@ class UserTest {
                 true,
                 true,
                 true,
-                true,
-                fixedClock
+                true
         );
         
         // Assert
@@ -50,40 +52,14 @@ class UserTest {
     }
 
     @Test
-    @DisplayName("create()メソッド（Clock引数なし）はシステムクロックを使用する")
-    void create_WithoutClock_UsesSystemClock() {
-        // Arrange
-        LocalDateTime beforeCreate = LocalDateTime.now();
-        
-        // Act
-        User user = User.create(
-                "test-id",
-                "testuser",
-                "test@example.com",
-                "hashedPassword",
-                true,
-                true,
-                true,
-                true
-        );
-        
-        LocalDateTime afterCreate = LocalDateTime.now();
-        
-        // Assert
-        assertThat(user.createdAt()).isNotNull();
-        assertThat(user.createdAt()).isBetween(beforeCreate, afterCreate);
-        assertThat(user.updatedAt()).isNotNull();
-        assertThat(user.updatedAt()).isBetween(beforeCreate, afterCreate);
-    }
-
-    @Test
-    @DisplayName("create()メソッドはIDがnullでも動作する")
-    void create_WorksWithNullId() {
+    @DisplayName("createUser()はIDがnullでも動作する")
+    void createUser_WorksWithNullId() {
         // Arrange
         Clock fixedClock = Clock.fixed(Instant.parse("2024-01-01T10:00:00Z"), ZoneId.systemDefault());
+        UserDomainService service = new UserDomainService(fixedClock);
         
         // Act
-        User user = User.create(
+        User user = service.createUser(
                 null,
                 "testuser",
                 "test@example.com",
@@ -91,8 +67,7 @@ class UserTest {
                 true,
                 true,
                 true,
-                true,
-                fixedClock
+                true
         );
         
         // Assert
@@ -103,8 +78,8 @@ class UserTest {
     }
 
     @Test
-    @DisplayName("update()メソッドは更新日時を現在時刻に設定し、作成日時は保持する")
-    void update_UpdatesUpdatedAtAndPreservesCreatedAt() {
+    @DisplayName("updateUser()は更新日時を現在時刻に設定し、作成日時は保持する")
+    void updateUser_UpdatesUpdatedAtAndPreservesCreatedAt() {
         // Arrange
         LocalDateTime originalCreatedAt = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
         LocalDateTime originalUpdatedAt = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
@@ -127,16 +102,18 @@ class UserTest {
         Clock updateClock = Clock.fixed(updateInstant, ZoneId.systemDefault());
         LocalDateTime expectedUpdatedAt = LocalDateTime.ofInstant(updateInstant, ZoneId.systemDefault());
         
+        UserDomainService service = new UserDomainService(updateClock);
+        
         // Act
-        User updatedUser = originalUser.update(
+        User updatedUser = service.updateUser(
+                originalUser,
                 "newusername",
                 "new@example.com",
                 "newPasswordHash",
                 false,
                 false,
                 false,
-                false,
-                updateClock
+                false
         );
         
         // Assert
@@ -158,48 +135,8 @@ class UserTest {
     }
 
     @Test
-    @DisplayName("update()メソッド（Clock引数なし）はシステムクロックを使用する")
-    void update_WithoutClock_UsesSystemClock() {
-        // Arrange
-        LocalDateTime originalCreatedAt = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
-        LocalDateTime originalUpdatedAt = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
-        
-        User originalUser = new User(
-                "test-id",
-                "username",
-                "email@example.com",
-                "passwordHash",
-                true,
-                true,
-                true,
-                true,
-                originalCreatedAt,
-                originalUpdatedAt
-        );
-        
-        LocalDateTime beforeUpdate = LocalDateTime.now();
-        
-        // Act
-        User updatedUser = originalUser.update(
-                "newusername",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
-        );
-        
-        LocalDateTime afterUpdate = LocalDateTime.now();
-        
-        // Assert
-        assertThat(updatedUser.updatedAt()).isBetween(beforeUpdate, afterUpdate);
-        assertThat(updatedUser.createdAt()).isEqualTo(originalCreatedAt);
-    }
-
-    @Test
-    @DisplayName("update()メソッドはnullフィールドを既存値で保持する")
-    void update_PreservesExistingValuesForNullFields() {
+    @DisplayName("updateUser()はnullフィールドを既存値で保持する")
+    void updateUser_PreservesExistingValuesForNullFields() {
         // Arrange
         LocalDateTime originalCreatedAt = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
         LocalDateTime originalUpdatedAt = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
@@ -218,17 +155,18 @@ class UserTest {
         );
         
         Clock fixedClock = Clock.fixed(Instant.parse("2024-01-02T10:00:00Z"), ZoneId.systemDefault());
+        UserDomainService service = new UserDomainService(fixedClock);
         
         // Act - usernameのみ更新、他はnull
-        User updatedUser = originalUser.update(
+        User updatedUser = service.updateUser(
+                originalUser,
                 "newusername",
                 null,  // emailは更新しない
                 null,  // passwordHashは更新しない
                 null,  // enabledは更新しない
                 null,
                 null,
-                null,
-                fixedClock
+                null
         );
         
         // Assert
@@ -244,8 +182,8 @@ class UserTest {
     }
 
     @Test
-    @DisplayName("update()メソッドは全てnullの場合でも更新日時のみ更新する")
-    void update_UpdatesOnlyUpdatedAtWhenAllFieldsAreNull() {
+    @DisplayName("updateUser()は全てnullの場合でも更新日時のみ更新する")
+    void updateUser_UpdatesOnlyUpdatedAtWhenAllFieldsAreNull() {
         // Arrange
         LocalDateTime originalCreatedAt = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
         LocalDateTime originalUpdatedAt = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
@@ -267,8 +205,10 @@ class UserTest {
         Clock updateClock = Clock.fixed(updateInstant, ZoneId.systemDefault());
         LocalDateTime expectedUpdatedAt = LocalDateTime.ofInstant(updateInstant, ZoneId.systemDefault());
         
+        UserDomainService service = new UserDomainService(updateClock);
+        
         // Act - 全てnull
-        User updatedUser = originalUser.update(null, null, null, null, null, null, null, updateClock);
+        User updatedUser = service.updateUser(originalUser, null, null, null, null, null, null, null);
         
         // Assert - 全ての値が保持されている
         assertThat(updatedUser.id()).isEqualTo("test-id");
