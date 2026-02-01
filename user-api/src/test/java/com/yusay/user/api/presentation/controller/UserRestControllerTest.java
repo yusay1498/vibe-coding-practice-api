@@ -308,7 +308,7 @@ class UserRestControllerTest {
         String userId = "b50e8400-e29b-41d4-a716-446655440001";
         String requestBody = """
                 {
-                    "username": "partialllyupdated"
+                    "username": "partiallyupdated"
                 }
                 """;
         
@@ -320,7 +320,7 @@ class UserRestControllerTest {
                 .hasContentType(MediaType.APPLICATION_JSON);
 
         assertResult.bodyJson().extractingPath("$.id").asString().isEqualTo(userId);
-        assertResult.bodyJson().extractingPath("$.username").asString().isEqualTo("partialllyupdated");
+        assertResult.bodyJson().extractingPath("$.username").asString().isEqualTo("partiallyupdated");
         assertResult.bodyJson().extractingPath("$.email").asString().isEqualTo("old@example.com");
         assertResult.bodyJson().extractingPath("$.enabled").asBoolean().isTrue();
     }
