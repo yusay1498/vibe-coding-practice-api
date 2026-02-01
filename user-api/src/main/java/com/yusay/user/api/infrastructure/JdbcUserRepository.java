@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -14,6 +15,18 @@ public class JdbcUserRepository implements UserRepository {
 
     public JdbcUserRepository(JdbcClient jdbcClient) {
         this.jdbcClient = jdbcClient;
+    }
+  
+    @Override
+    public List<User> findAll() {
+        return jdbcClient.sql("""
+                    SELECT id, username, email, password_hash, enabled,
+                           account_non_expired, account_non_locked, credentials_non_expired,
+                           created_at, updated_at
+                    FROM users
+                """)
+                .query(User.class)
+                .list();
     }
 
     @Override
@@ -69,4 +82,13 @@ public class JdbcUserRepository implements UserRepository {
                 .query(User.class)
                 .single();
     }
+    
+    public int deleteById(String id) {
+        return jdbcClient.sql("""
+                    DELETE FROM users
+                    WHERE id = :id
+                """)
+                .param("id", id)
+                .update();
+    }    
 }

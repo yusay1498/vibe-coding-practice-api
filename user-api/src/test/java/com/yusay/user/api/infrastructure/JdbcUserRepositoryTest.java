@@ -12,6 +12,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -194,6 +195,15 @@ class JdbcUserRepositoryTest {
         Optional<User> retrievedUser = jdbcUserRepository.findById(userId);
         assertThat(retrievedUser).isPresent();
         assertThat(retrievedUser.get().username()).isEqualTo("newuser");
+    @DisplayName("findAll: ユーザーが存在しない場合、空のリストを返す")
+    void findAll_whenNoUsersExist_returnsEmptyList() {
+        // Given: ユーザーが存在しない状態
+
+        // When: findAllを実行
+        List<User> result = jdbcUserRepository.findAll();
+
+        // Then: 空のリストが返されることを確認
+        assertThat(result).isEmpty();
     }
 
     @Test
@@ -282,6 +292,101 @@ class JdbcUserRepositoryTest {
         Optional<User> retrievedUser = jdbcUserRepository.findById(userId);
         assertThat(retrievedUser).isPresent();
         assertThat(retrievedUser.get().enabled()).isFalse();
+            VALUES ('test-delete-user-001', 'deleteuser', 'delete@example.com', '$2a$10$test-hash',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """
+    })
+    @DisplayName("deleteById: ユーザーが存在する場合、削除される")
+    void deleteById_whenUserExists_deletesUser() {
+        // Given: テストユーザーを挿入
+        String userId = "test-delete-user-001";
+
+        // When: deleteByIdを実行
+        int deletedCount = jdbcUserRepository.deleteById(userId);
+
+        // Then: 削除されたレコード数が1であることを確認
+        assertThat(deletedCount).isEqualTo(1);
+        
+        // Then: ユーザーが削除されていることを確認
+        Optional<User> result = jdbcUserRepository.findById(userId);
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("deleteById: ユーザーが存在しない場合、例外をスローしない")
+    void deleteById_whenUserDoesNotExist_doesNotThrowException() {
+        // Given: 存在しないユーザーID
+        String nonExistentUserId = "non-existent-user-id";
+
+        // When: deleteByIdを実行
+        int deletedCount = jdbcUserRepository.deleteById(nonExistentUserId);
+
+        // Then: 削除されたレコード数が0であることを確認
+        assertThat(deletedCount).isEqualTo(0);
+    }
+
+    @Test
+    @Sql(statements = {
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
+            VALUES ('test-delete-user-002', 'user1', 'user1@example.com', '$2a$10$hash1',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """,
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
+            VALUES ('test-delete-user-003', 'user2', 'user2@example.com', '$2a$10$hash2',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """
+    })
+    @DisplayName("deleteById: 複数のユーザーが存在する場合、指定したIDのユーザーのみを削除する")
+    void deleteById_whenMultipleUsersExist_deletesOnlySpecifiedUser() {
+        // Given: 複数のテストユーザーを挿入
+        String userId1 = "test-delete-user-002";
+        String userId2 = "test-delete-user-003";
+
+        // When: userId1のユーザーを削除
+        int deletedCount = jdbcUserRepository.deleteById(userId1);
+
+        // Then: 削除されたレコード数が1であることを確認
+        assertThat(deletedCount).isEqualTo(1);
+
+        // Then: userId1のユーザーは削除され、userId2のユーザーは存在することを確認
+        Optional<User> result1 = jdbcUserRepository.findById(userId1);
+        Optional<User> result2 = jdbcUserRepository.findById(userId2);
+
+        assertThat(result1).isEmpty();
+        assertThat(result2).isPresent();
+        assertThat(result2.get().id()).isEqualTo(userId2);
+    }
+
+    @Test
+    @DisplayName("deleteById: nullのIDを渡した場合、例外をスローしない")
+    void deleteById_whenIdIsNull_doesNotThrowException() {
+        // Given: nullのユーザーID
+        String nullUserId = null;
+
+        // When: deleteByIdを実行
+        int deletedCount = jdbcUserRepository.deleteById(nullUserId);
+
+        // Then: 削除されたレコード数が0であることを確認
+        assertThat(deletedCount).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("deleteById: 空文字列のIDを渡した場合、例外をスローしない")
+    void deleteById_whenIdIsEmpty_doesNotThrowException() {
+        // Given: 空文字列のユーザーID
+        String emptyUserId = "";
+
+        // When: deleteByIdを実行
+        int deletedCount = jdbcUserRepository.deleteById(emptyUserId);
+
+        // Then: 削除されたレコード数が0であることを確認
+        assertThat(deletedCount).isEqualTo(0);
     }
 
     @Test
@@ -322,5 +427,66 @@ class JdbcUserRepositoryTest {
         assertThat(savedUser.username()).isEqualTo("changedusername");
         assertThat(savedUser.email()).isEqualTo("changed@example.com");
         assertThat(savedUser.passwordHash()).isEqualTo("$2a$10$original-hash");
+            VALUES ('test-user-id-001', 'testuser', 'test@example.com', '$2a$10$test-password-hash',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """
+    })
+    @DisplayName("findAll: ユーザーが1件存在する場合、そのユーザーを含むリストを返す")
+    void findAll_whenOneUserExists_returnsListWithOneUser() {
+        // Given: テストユーザーを1件挿入
+        String userId = "test-user-id-001";
+        String username = "testuser";
+        String email = "test@example.com";
+
+        // When: findAllを実行
+        List<User> result = jdbcUserRepository.findAll();
+
+        // Then: 1件のユーザーが取得できることを確認
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).id()).isEqualTo(userId);
+        assertThat(result.get(0).username()).isEqualTo(username);
+        assertThat(result.get(0).email()).isEqualTo(email);
+    }
+
+    @Test
+    @Sql(statements = {
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
+            VALUES ('test-user-id-001', 'user1', 'user1@example.com', '$2a$10$hash1',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """,
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
+            VALUES ('test-user-id-002', 'user2', 'user2@example.com', '$2a$10$hash2',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """,
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
+            VALUES ('test-user-id-003', 'user3', 'user3@example.com', '$2a$10$hash3',
+                    false, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """
+    })
+    @DisplayName("findAll: 複数のユーザーが存在する場合、全てのユーザーを含むリストを返す")
+    void findAll_whenMultipleUsersExist_returnsListWithAllUsers() {
+        // Given: テストユーザーを3件挿入（1件はenabled=false）
+
+        // When: findAllを実行
+        List<User> result = jdbcUserRepository.findAll();
+
+        // Then: 3件のユーザーが取得できることを確認
+        assertThat(result).hasSize(3);
+        assertThat(result).extracting(User::id)
+                .containsExactlyInAnyOrder("test-user-id-001", "test-user-id-002", "test-user-id-003");
+        assertThat(result).extracting(User::username)
+                .containsExactlyInAnyOrder("user1", "user2", "user3");
+
+        // enabledがfalseのユーザーも含まれることを確認
+        assertThat(result).anyMatch(user -> !user.enabled());
     }
 }

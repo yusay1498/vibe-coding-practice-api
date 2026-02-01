@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,5 +64,101 @@ class UserServiceTest {
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("User not found: " + userId);
         verify(userRepository).findById(userId);
+    }
+
+    @Test
+    @DisplayName("list()は全ユーザーのリストを返す")
+    void list_ReturnsAllUsers() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserService userService = new UserService(userRepository);
+        
+        LocalDateTime fixedDateTime = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
+        List<User> expectedUsers = List.of(
+                new User(
+                        "user-id-1",
+                        "user1",
+                        "user1@example.com",
+                        "hashedPassword1",
+                        true,
+                        true,
+                        true,
+                        true,
+                        fixedDateTime,
+                        fixedDateTime
+                ),
+                new User(
+                        "user-id-2",
+                        "user2",
+                        "user2@example.com",
+                        "hashedPassword2",
+                        true,
+                        true,
+                        true,
+                        true,
+                        fixedDateTime,
+                        fixedDateTime
+                )
+        );
+        when(userRepository.findAll()).thenReturn(expectedUsers);
+
+        // Act
+        List<User> actualUsers = userService.list();
+
+        // Assert
+        assertThat(actualUsers).isEqualTo(expectedUsers);
+        assertThat(actualUsers).hasSize(2);
+        verify(userRepository).findAll();
+    }
+
+    @Test
+    @DisplayName("list()はユーザーが存在しない場合に空のリストを返す")
+    void list_ReturnsEmptyList_WhenNoUsersExist() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserService userService = new UserService(userRepository);
+        
+        when(userRepository.findAll()).thenReturn(List.of());
+
+        // Act
+        List<User> actualUsers = userService.list();
+
+        // Assert
+        assertThat(actualUsers).isEmpty();
+        verify(userRepository).findAll();
+    }
+
+    @Test
+    @DisplayName("delete()は存在するユーザーを削除する")
+    void delete_DeletesUser_WhenUserExists() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserService userService = new UserService(userRepository);
+        
+        String userId = "test-user-id";
+        when(userRepository.deleteById(userId)).thenReturn(1);
+
+        // Act
+        userService.delete(userId);
+
+        // Assert
+        verify(userRepository).deleteById(userId);
+    }
+
+    @Test
+    @DisplayName("delete()はユーザーが見つからない場合にUserNotFoundExceptionをスローする")
+    void delete_ThrowsUserNotFoundException_WhenUserNotFound() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserService userService = new UserService(userRepository);
+        
+        String userId = "non-existent-id";
+        when(userRepository.deleteById(userId)).thenReturn(0);
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.delete(userId))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessage("User not found: " + userId);
+        verify(userRepository).deleteById(userId);
     }
 }
