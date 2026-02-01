@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public class JdbcUserRepository implements UserRepository {
@@ -78,7 +79,7 @@ public class JdbcUserRepository implements UserRepository {
             // IDが指定されていない場合はUUIDを生成
             String id = (user.id() != null && !user.id().isEmpty()) 
                     ? user.id() 
-                    : java.util.UUID.randomUUID().toString();
+                    : UUID.randomUUID().toString();
             
             jdbcClient.sql("""
                         INSERT INTO users (id, username, email, password_hash, enabled,
@@ -101,11 +102,13 @@ public class JdbcUserRepository implements UserRepository {
                     .update();
             
             // IDが生成された場合は、そのIDで返す
-            return findById(id).orElseThrow();
+            return findById(id).orElseThrow(() -> 
+                    new IllegalStateException("Failed to retrieve user after insertion: " + id));
         }
         
         // 保存後のユーザーを取得して返す
-        return findById(user.id()).orElseThrow();
+        return findById(user.id()).orElseThrow(() -> 
+                new IllegalStateException("Failed to retrieve user after save: " + user.id()));
     }
     
     public int deleteById(String id) {
