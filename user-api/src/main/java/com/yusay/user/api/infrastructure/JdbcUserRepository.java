@@ -5,7 +5,6 @@ import com.yusay.user.api.domain.repository.UserRepository;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -48,7 +47,6 @@ public class JdbcUserRepository implements UserRepository {
     public User save(User user) {
         // データ保証のため、既存ユーザーかどうかを確認
         Optional<User> existingUser = findById(user.id());
-        LocalDateTime now = LocalDateTime.now();
         
         if (existingUser.isPresent()) {
             // 既存ユーザーの場合はUPDATE
@@ -72,7 +70,7 @@ public class JdbcUserRepository implements UserRepository {
                     .param("accountNonExpired", user.accountNonExpired())
                     .param("accountNonLocked", user.accountNonLocked())
                     .param("credentialsNonExpired", user.credentialsNonExpired())
-                    .param("updatedAt", now)
+                    .param("updatedAt", user.updatedAt())
                     .update();
         } else {
             // 新規ユーザーの場合はINSERT
@@ -97,8 +95,8 @@ public class JdbcUserRepository implements UserRepository {
                     .param("accountNonExpired", user.accountNonExpired())
                     .param("accountNonLocked", user.accountNonLocked())
                     .param("credentialsNonExpired", user.credentialsNonExpired())
-                    .param("createdAt", now)
-                    .param("updatedAt", now)
+                    .param("createdAt", user.createdAt())
+                    .param("updatedAt", user.updatedAt())
                     .update();
             
             // IDが生成された場合は、そのIDで返す

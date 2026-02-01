@@ -166,6 +166,7 @@ class JdbcUserRepositoryTest {
     void save_whenNewUser_insertsUser() {
         // Given: 新規ユーザー
         String userId = "new-user-id-001";
+        LocalDateTime now = LocalDateTime.now();
         User newUser = new User(
                 userId,
                 "newuser",
@@ -175,8 +176,8 @@ class JdbcUserRepositoryTest {
                 true,
                 true,
                 true,
-                null,  // created_atはsave時に設定される
-                null   // updated_atはsave時に設定される
+                now,  // created_atを設定
+                now   // updated_atを設定
         );
 
         // When: saveを実行
@@ -224,6 +225,7 @@ class JdbcUserRepositoryTest {
     void save_whenExistingUser_updatesUser() {
         // Given: 既存のユーザーIDで更新内容を作成
         String userId = "existing-user-id";
+        LocalDateTime now = LocalDateTime.now();
         User updatedUser = new User(
                 userId,
                 "updateduser",
@@ -233,8 +235,8 @@ class JdbcUserRepositoryTest {
                 false,
                 false,
                 false,
-                null,  // created_atは変更されない
-                null   // updated_atはsave時に更新される
+                LocalDateTime.of(2024, 1, 1, 0, 0, 0),  // created_atは変更されない
+                now   // updated_atを設定
         );
 
         // When: saveを実行
@@ -274,6 +276,7 @@ class JdbcUserRepositoryTest {
     void save_whenNewDisabledUser_insertsUser() {
         // Given: enabledがfalseの新規ユーザー
         String userId = "disabled-new-user-id";
+        LocalDateTime now = LocalDateTime.now();
         User newUser = new User(
                 userId,
                 "disableduser",
@@ -283,8 +286,8 @@ class JdbcUserRepositoryTest {
                 true,
                 true,
                 true,
-                null,
-                null
+                now,
+                now
         );
 
         // When: saveを実行
@@ -419,7 +422,8 @@ class JdbcUserRepositoryTest {
         Optional<User> existingUser = jdbcUserRepository.findById(userId);
         assertThat(existingUser).isPresent();
 
-        // Given: usernameとemailのみを変更したUserオブジェクトを作成
+        // Given: usernameとemailのみを変更し、updated_atを現在時刻に設定したUserオブジェクトを作成
+        LocalDateTime now = LocalDateTime.now();
         User updatedUser = new User(
                 userId,
                 "changedusername",
@@ -430,7 +434,7 @@ class JdbcUserRepositoryTest {
                 existingUser.get().accountNonLocked(),
                 existingUser.get().credentialsNonExpired(),
                 existingUser.get().createdAt(),
-                existingUser.get().updatedAt()
+                now  // updated_atを現在時刻に設定
         );
 
         // When: saveを実行
