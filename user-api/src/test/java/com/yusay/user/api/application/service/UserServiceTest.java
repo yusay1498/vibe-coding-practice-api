@@ -203,7 +203,9 @@ class UserServiceTest {
         );
         
         // 最初のチェックでは重複が見つからない
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(existingUser));
         when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
         when(userDomainService.createUser(null, username, email, passwordHash, true, true, true, true))
                 .thenReturn(newUser);
@@ -211,11 +213,6 @@ class UserServiceTest {
         // saveで制約違反が発生（競合状態）
         when(userRepository.save(newUser))
                 .thenThrow(new DataIntegrityViolationException("UNIQUE constraint violation"));
-        
-        // 再チェック時にユーザーが見つかる
-        when(userRepository.findByEmail(email))
-                .thenReturn(Optional.empty())
-                .thenReturn(Optional.of(existingUser));
 
         // Act & Assert
         assertThatThrownBy(() -> userService.create(username, email, passwordHash))
