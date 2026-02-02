@@ -7,6 +7,7 @@ import com.yusay.user.api.domain.repository.UserRepository;
 import com.yusay.user.api.domain.service.UserDomainService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -114,7 +115,7 @@ class UserServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> userService.create(username, email, passwordHash))
                 .isInstanceOf(DuplicateUserException.class)
-                .hasMessage("Email already exists: " + email);
+                .hasMessage("ユーザーが既に存在します: " + email);
         
         verify(userRepository).findByEmail(email);
         verify(userRepository, never()).findByUsername(anyString());
@@ -154,12 +155,74 @@ class UserServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> userService.create(username, email, passwordHash))
                 .isInstanceOf(DuplicateUserException.class)
-                .hasMessage("Username already exists: " + username);
+                .hasMessage("ユーザーが既に存在します: " + username);
         
         verify(userRepository).findByEmail(email);
         verify(userRepository).findByUsername(username);
         verify(userDomainService, never()).createUser(any(), any(), any(), any(), any(), any(), any(), any());
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("create()はDB制約違反時に競合状態を適切に処理する")
+    void create_HandlesRaceCondition_WhenDataIntegrityViolationOccurs() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        UserService userService = new UserService(userRepository, userDomainService);
+        
+        String username = "newuser";
+        String email = "newuser@example.com";
+        String passwordHash = "hashedPassword";
+        LocalDateTime fixedDateTime = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
+        
+        User newUser = new User(
+                null,
+                username,
+                email,
+                passwordHash,
+                true,
+                true,
+                true,
+                true,
+                fixedDateTime,
+                fixedDateTime
+        );
+        
+        User existingUser = new User(
+                "existing-id",
+                username,
+                email,
+                "existingPasswordHash",
+                true,
+                true,
+                true,
+                true,
+                fixedDateTime,
+                fixedDateTime
+        );
+        
+        // 最初のチェックでは重複が見つからない
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+        when(userDomainService.createUser(null, username, email, passwordHash, true, true, true, true))
+                .thenReturn(newUser);
+        
+        // saveで制約違反が発生（競合状態）
+        when(userRepository.save(newUser))
+                .thenThrow(new DataIntegrityViolationException("UNIQUE constraint violation"));
+        
+        // 再チェック時にユーザーが見つかる
+        when(userRepository.findByEmail(email))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(existingUser));
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.create(username, email, passwordHash))
+                .isInstanceOf(DuplicateUserException.class)
+                .hasMessage("ユーザーが既に存在します: " + email);
+        
+        verify(userRepository).save(newUser);
     }
 
     @Test
