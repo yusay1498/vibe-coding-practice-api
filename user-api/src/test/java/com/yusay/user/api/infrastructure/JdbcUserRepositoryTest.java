@@ -641,4 +641,80 @@ class JdbcUserRepositoryTest {
         List<User> result = jdbcUserRepository.findAll();
         assertThat(result).isEmpty();
     }
+
+    @Test
+    @Sql(statements = {
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
+            VALUES ('test-email-user-001', 'emailuser', 'test@example.com', '$2a$10$test-hash',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """
+    })
+    @DisplayName("findByEmail: メールアドレスが存在する場合、Userを返す")
+    void findByEmail_whenEmailExists_returnsUser() {
+        // Given: テストユーザーを挿入
+        String email = "test@example.com";
+
+        // When: findByEmailを実行
+        Optional<User> result = jdbcUserRepository.findByEmail(email);
+
+        // Then: ユーザーが取得できることを確認
+        assertThat(result).isPresent();
+        assertThat(result.get().email()).isEqualTo(email);
+        assertThat(result.get().username()).isEqualTo("emailuser");
+        assertThat(result.get().id()).isEqualTo("test-email-user-001");
+    }
+
+    @Test
+    @DisplayName("findByEmail: メールアドレスが存在しない場合、空のOptionalを返す")
+    void findByEmail_whenEmailDoesNotExist_returnsEmptyOptional() {
+        // Given: 存在しないメールアドレス
+        String nonExistentEmail = "nonexistent@example.com";
+
+        // When: findByEmailを実行
+        Optional<User> result = jdbcUserRepository.findByEmail(nonExistentEmail);
+
+        // Then: 空のOptionalが返されることを確認
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @Sql(statements = {
+            """
+            INSERT INTO users (id, username, email, password_hash, enabled,
+                               account_non_expired, account_non_locked, credentials_non_expired,
+                               created_at, updated_at)
+            VALUES ('test-username-user-001', 'testusername', 'username@example.com', '$2a$10$test-hash',
+                    true, true, true, true, '2024-01-01 00:00:00', '2024-01-01 00:00:00');
+            """
+    })
+    @DisplayName("findByUsername: ユーザー名が存在する場合、Userを返す")
+    void findByUsername_whenUsernameExists_returnsUser() {
+        // Given: テストユーザーを挿入
+        String username = "testusername";
+
+        // When: findByUsernameを実行
+        Optional<User> result = jdbcUserRepository.findByUsername(username);
+
+        // Then: ユーザーが取得できることを確認
+        assertThat(result).isPresent();
+        assertThat(result.get().username()).isEqualTo(username);
+        assertThat(result.get().email()).isEqualTo("username@example.com");
+        assertThat(result.get().id()).isEqualTo("test-username-user-001");
+    }
+
+    @Test
+    @DisplayName("findByUsername: ユーザー名が存在しない場合、空のOptionalを返す")
+    void findByUsername_whenUsernameDoesNotExist_returnsEmptyOptional() {
+        // Given: 存在しないユーザー名
+        String nonExistentUsername = "nonexistentuser";
+
+        // When: findByUsernameを実行
+        Optional<User> result = jdbcUserRepository.findByUsername(nonExistentUsername);
+
+        // Then: 空のOptionalが返されることを確認
+        assertThat(result).isEmpty();
+    }
 }
