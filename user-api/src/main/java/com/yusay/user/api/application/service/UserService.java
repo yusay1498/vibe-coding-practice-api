@@ -142,7 +142,7 @@ public class UserService {
                 User foundUser = userWithEmail.get();
                 if (!foundUser.id().equals(id)) {
                     // 自分自身以外のユーザーがそのメールアドレスを使用している場合は例外
-                    throw new DuplicateUserException(email);
+                    throw new DuplicateUserException("メールアドレス");
                 }
             }
         }
@@ -154,7 +154,7 @@ public class UserService {
                 User foundUser = userWithUsername.get();
                 if (!foundUser.id().equals(id)) {
                     // 自分自身以外のユーザーがそのユーザー名を使用している場合は例外
-                    throw new DuplicateUserException(username);
+                    throw new DuplicateUserException("ユーザー名");
                 }
             }
         }
@@ -183,7 +183,7 @@ public class UserService {
                 if (userWithEmail.isPresent()) {
                     User foundUser = userWithEmail.get();
                     if (!foundUser.id().equals(id)) {
-                        throw new DuplicateUserException(email);
+                        throw new DuplicateUserException("メールアドレス");
                     }
                 }
             }
@@ -192,7 +192,7 @@ public class UserService {
                 if (userWithUsername.isPresent()) {
                     User foundUser = userWithUsername.get();
                     if (!foundUser.id().equals(id)) {
-                        throw new DuplicateUserException(username);
+                        throw new DuplicateUserException("ユーザー名");
                     }
                 }
             }
