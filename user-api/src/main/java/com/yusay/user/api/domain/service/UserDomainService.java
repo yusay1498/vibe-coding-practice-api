@@ -1,10 +1,12 @@
 package com.yusay.user.api.domain.service;
 
 import com.yusay.user.api.domain.entity.User;
+import com.yusay.user.api.domain.exception.DeleteAllNotAllowedException;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * ユーザーエンティティの生成・更新ロジックを担当するドメインサービス
@@ -91,5 +93,42 @@ public class UserDomainService {
                 existingUser.createdAt(),  // 作成日時は保持
                 LocalDateTime.now(clock)  // 更新日時を現在時刻に設定
         );
+    }
+
+    /**
+     * 全件削除の実行前検証を行う
+     * ドメインルール: 削除対象が一定数を超える場合は安全性のために拒否する
+     * 
+     * 注意: 空のリスト（0件）の削除は許可されます。これはデータが存在しない状態での
+     * 全件削除操作を安全に実行できるようにするためです。
+     * 
+     * @param users 削除対象のユーザーリスト
+     * @param maxAllowedDeletions 一度に削除可能な最大件数（正の整数である必要があります）
+     * @throws DeleteAllNotAllowedException 削除が許可されていない場合
+     * @throws IllegalArgumentException maxAllowedDeletionsが0以下の場合
+     */
+    public void validateDeleteAll(List<User> users, int maxAllowedDeletions) {
+        if (maxAllowedDeletions <= 0) {
+            throw new IllegalArgumentException(
+                String.format("maxAllowedDeletions must be positive, but was: %d", maxAllowedDeletions));
+        }
+        
+        int userCount = users.size();
+        
+        if (userCount > maxAllowedDeletions) {
+            throw new DeleteAllNotAllowedException(
+                String.format("削除対象ユーザー数（%d件）が上限（%d件）を超えています。安全のため削除を拒否します。",
+                    userCount, maxAllowedDeletions)
+            );
+        }
+    }
+
+    /**
+     * 現在時刻を取得する
+     * 
+     * @return 現在のLocalDateTime
+     */
+    public LocalDateTime getCurrentTime() {
+        return LocalDateTime.now(clock);
     }
 }

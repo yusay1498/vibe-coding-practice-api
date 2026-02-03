@@ -1,6 +1,8 @@
 package com.yusay.user.api.application.service;
 
+import com.yusay.user.api.application.dto.DeleteAllResult;
 import com.yusay.user.api.domain.entity.User;
+import com.yusay.user.api.domain.exception.DeleteAllNotAllowedException;
 import com.yusay.user.api.domain.exception.DuplicateUserException;
 import com.yusay.user.api.domain.exception.UserNotFoundException;
 import com.yusay.user.api.domain.repository.UserRepository;
@@ -9,14 +11,23 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -30,7 +41,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService);
+        UserService userService = new UserService(userRepository, userDomainService, "dev", 1000);
         
         String username = "newuser";
         String email = "newuser@example.com";
@@ -90,7 +101,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService);
+        UserService userService = new UserService(userRepository, userDomainService, "default", 1000);
         
         String username = "newuser";
         String email = "existing@example.com";
@@ -129,7 +140,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService);
+        UserService userService = new UserService(userRepository, userDomainService, "default", 1000);
         
         String username = "existinguser";
         String email = "newuser@example.com";
@@ -169,7 +180,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService);
+        UserService userService = new UserService(userRepository, userDomainService, "default", 1000);
         
         String username = "newuser";
         String email = "newuser@example.com";
@@ -228,7 +239,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService);
+        UserService userService = new UserService(userRepository, userDomainService, "default", 1000);
         
         String userId = "test-user-id";
         LocalDateTime fixedDateTime = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
@@ -260,7 +271,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService);
+        UserService userService = new UserService(userRepository, userDomainService, "default", 1000);
         
         String userId = "non-existent-id";
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
@@ -278,7 +289,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService);
+        UserService userService = new UserService(userRepository, userDomainService, "default", 1000);
         
         LocalDateTime fixedDateTime = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
         List<User> expectedUsers = List.of(
@@ -324,7 +335,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService);
+        UserService userService = new UserService(userRepository, userDomainService, "default", 1000);
         
         when(userRepository.findAll()).thenReturn(List.of());
 
@@ -342,7 +353,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService);
+        UserService userService = new UserService(userRepository, userDomainService, "default", 1000);
         
         String userId = "test-user-id";
         when(userRepository.deleteById(userId)).thenReturn(1);
@@ -360,7 +371,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService);
+        UserService userService = new UserService(userRepository, userDomainService, "default", 1000);
         
         String userId = "non-existent-id";
         when(userRepository.deleteById(userId)).thenReturn(0);
@@ -373,38 +384,178 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("deleteAll()は全ユーザーを削除して削除件数を返す")
-    void deleteAll_DeletesAllUsers_AndReturnsCount() {
+    @DisplayName("deleteAll()は開発環境で全ユーザーを削除して結果を返す")
+    void deleteAll_DeletesAllUsers_AndReturnsResult_InDevelopmentEnvironment() {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService);
+        LocalDateTime expectedTime = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
+        UserService userService = new UserService(userRepository, userDomainService, "dev", 1000);
         
-        when(userRepository.deleteAll()).thenReturn(3);
+        List<User> users = List.of(
+            new User("id1", "user1", "user1@example.com", "hash1", true, true, true, true, 
+                LocalDateTime.now(), LocalDateTime.now()),
+            new User("id2", "user2", "user2@example.com", "hash2", true, true, true, true, 
+                LocalDateTime.now(), LocalDateTime.now())
+        );
+        
+        when(userRepository.findAll()).thenReturn(users);
+        doNothing().when(userDomainService).validateDeleteAll(anyList(), anyInt());
+        when(userDomainService.getCurrentTime()).thenReturn(expectedTime);
+        when(userRepository.deleteAll()).thenReturn(2);
 
         // Act
-        int deletedCount = userService.deleteAll();
+        DeleteAllResult result = userService.deleteAll();
 
         // Assert
-        assertThat(deletedCount).isEqualTo(3);
+        assertThat(result.deletedCount()).isEqualTo(2);
+        assertThat(result.environment()).isEqualTo("dev");
+        assertThat(result.executedAt()).isEqualTo(expectedTime);
+        verify(userRepository).findAll();
+        verify(userDomainService).validateDeleteAll(eq(users), eq(1000));
+        verify(userDomainService).getCurrentTime();
         verify(userRepository).deleteAll();
     }
 
     @Test
-    @DisplayName("deleteAll()はユーザーが存在しない場合に0を返す")
+    @DisplayName("deleteAll()はユーザーが存在しない場合に0件削除を返す")
     void deleteAll_ReturnsZero_WhenNoUsersExist() {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService);
+        UserService userService = new UserService(userRepository, userDomainService, "test", 1000);
         
+        when(userRepository.findAll()).thenReturn(List.of());
+        doNothing().when(userDomainService).validateDeleteAll(anyList(), anyInt());
         when(userRepository.deleteAll()).thenReturn(0);
 
         // Act
-        int deletedCount = userService.deleteAll();
+        DeleteAllResult result = userService.deleteAll();
 
         // Assert
-        assertThat(deletedCount).isEqualTo(0);
+        assertThat(result.deletedCount()).isEqualTo(0);
+        assertThat(result.environment()).isEqualTo("test");
         verify(userRepository).deleteAll();
+    }
+
+    @Test
+    @DisplayName("deleteAll()は本番環境では例外をスローする")
+    void deleteAll_ThrowsException_InProductionEnvironment() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        UserService userService = new UserService(userRepository, userDomainService, "prod", 1000);
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.deleteAll())
+                .isInstanceOf(DeleteAllNotAllowedException.class)
+                .hasMessageContaining("本番環境では全件削除を実行できません");
+        
+        verify(userRepository, never()).deleteAll();
+    }
+
+    @Test
+    @DisplayName("deleteAll()は削除件数が上限を超える場合に例外をスローする")
+    void deleteAll_ThrowsException_WhenDeletionLimitExceeded() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        UserService userService = new UserService(userRepository, userDomainService, "dev", 1000);
+        
+        List<User> users = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            users.add(new User("id" + i, "user" + i, "user" + i + "@example.com", 
+                "hash", true, true, true, true, LocalDateTime.now(), LocalDateTime.now()));
+        }
+        
+        when(userRepository.findAll()).thenReturn(users);
+        doThrow(new DeleteAllNotAllowedException("削除対象ユーザー数が上限を超えています"))
+            .when(userDomainService).validateDeleteAll(anyList(), anyInt());
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.deleteAll())
+                .isInstanceOf(DeleteAllNotAllowedException.class)
+                .hasMessageContaining("削除対象ユーザー数が上限を超えています");
+        
+        verify(userRepository, never()).deleteAll();
+    }
+
+    @Test
+    @DisplayName("deleteAll()は削除後に削除件数が上限を超えた場合に例外をスローする（競合状態の検出）")
+    void deleteAll_ThrowsException_WhenPostDeletionCountExceedsLimit() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        int maxLimit = 100;
+        UserService userService = new UserService(userRepository, userDomainService, "dev", maxLimit);
+        
+        // 事前検証では上限以下のユーザーが存在
+        List<User> users = new ArrayList<>();
+        for (int i = 0; i < 50; i++) {
+            users.add(new User("id" + i, "user" + i, "user" + i + "@example.com", 
+                "hash", true, true, true, true, LocalDateTime.now(), LocalDateTime.now()));
+        }
+        
+        when(userRepository.findAll()).thenReturn(users);
+        doNothing().when(userDomainService).validateDeleteAll(anyList(), anyInt());
+        // しかし実際には上限を超える数が削除された（競合状態）
+        when(userRepository.deleteAll()).thenReturn(150);
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.deleteAll())
+                .isInstanceOf(DeleteAllNotAllowedException.class)
+                .hasMessageContaining("削除件数（150件）が上限（100件）を超えているため");
+        
+        verify(userRepository).deleteAll();
+    }
+
+    @Test
+    @DisplayName("deleteAll()は複数プロファイルが設定されている場合でも本番環境を正しく検出する")
+    void deleteAll_ThrowsException_WithMultipleProfiles() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        UserService userService = new UserService(userRepository, userDomainService, "dev,prod,debug", 1000);
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.deleteAll())
+                .isInstanceOf(DeleteAllNotAllowedException.class)
+                .hasMessageContaining("本番環境では全件削除を実行できません");
+        
+        verify(userRepository, never()).deleteAll();
+    }
+
+    @Test
+    @DisplayName("deleteAll()は'production'プロファイルでも例外をスローする")
+    void deleteAll_ThrowsException_WithProductionProfile() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        UserService userService = new UserService(userRepository, userDomainService, "production", 1000);
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.deleteAll())
+                .isInstanceOf(DeleteAllNotAllowedException.class)
+                .hasMessageContaining("本番環境では全件削除を実行できません");
+        
+        verify(userRepository, never()).deleteAll();
+    }
+
+    @Test
+    @DisplayName("UserService()はmaxAllowedDeletionsが0以下の場合に例外をスローする")
+    void constructor_ThrowsException_WhenMaxAllowedDeletionsIsZeroOrNegative() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+
+        // Act & Assert - 0の場合
+        assertThatThrownBy(() -> new UserService(userRepository, userDomainService, "dev", 0))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("maxAllowedDeletions must be positive");
+
+        // Act & Assert - 負の数の場合
+        assertThatThrownBy(() -> new UserService(userRepository, userDomainService, "dev", -1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("maxAllowedDeletions must be positive");
     }
 }
