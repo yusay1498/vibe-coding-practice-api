@@ -167,4 +167,186 @@ class UserRestControllerTest {
         assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(404);
         assertResult.bodyJson().extractingPath("$.detail").asString().isEqualTo("User not found: " + nonExistingUserId);
     }
+
+    @Test
+    @WithMockUser
+    @DisplayName("正しいデータで新規ユーザーを作成できること")
+    @Sql(statements = "DELETE FROM users;")
+    void testCreateUser_Success() throws Exception {
+        String requestBody = """
+                {
+                    "username": "newuser",
+                    "email": "newuser@example.com",
+                    "password": "password123"
+                }
+                """;
+        
+        var assertResult = assertThat(mockMvcTester.post()
+                .uri("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .hasStatus(201)
+                .hasContentType(MediaType.APPLICATION_JSON);
+
+        assertResult.bodyJson().extractingPath("$.username").asString().isEqualTo("newuser");
+        assertResult.bodyJson().extractingPath("$.email").asString().isEqualTo("newuser@example.com");
+        assertResult.bodyJson().extractingPath("$.enabled").asBoolean().isTrue();
+        
+        // IDが生成されていることを確認
+        assertResult.bodyJson().extractingPath("$.id").asString().isNotBlank();
+        
+        // パスワードハッシュは@JsonIgnoreで除外されているため、レスポンスに含まれないことを確認
+        assertResult.bodyText().doesNotContain("passwordHash");
+        assertResult.bodyText().doesNotContain("password123");
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("重複するメールアドレスで新規ユーザーを作成しようとすると409エラーが返されること")
+    @Sql(statements = {
+            """
+            DELETE FROM users;
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES ('850e8400-e29b-41d4-a716-446655440001', 'existinguser', 'existing@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true);
+            """
+    })
+    void testCreateUser_DuplicateEmail() throws Exception {
+        String requestBody = """
+                {
+                    "username": "newuser",
+                    "email": "existing@example.com",
+                    "password": "password123"
+                }
+                """;
+        
+        var assertResult = assertThat(mockMvcTester.post()
+                .uri("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .hasStatus(409)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+        assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Duplicate user");
+        assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(409);
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("重複するユーザー名で新規ユーザーを作成しようとすると409エラーが返されること")
+    @Sql(statements = {
+            """
+            DELETE FROM users;
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES ('850e8400-e29b-41d4-a716-446655440001', 'existinguser', 'existing@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true);
+            """
+    })
+    void testCreateUser_DuplicateUsername() throws Exception {
+        String requestBody = """
+                {
+                    "username": "existinguser",
+                    "email": "newemail@example.com",
+                    "password": "password123"
+                }
+                """;
+        
+        var assertResult = assertThat(mockMvcTester.post()
+                .uri("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .hasStatus(409)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+        assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Duplicate user");
+        assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(409);
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("必須項目が欠けている場合は400エラーが返されること")
+    void testCreateUser_MissingRequiredFields() throws Exception {
+        String requestBody = """
+                {
+                    "username": "newuser"
+                }
+                """;
+        
+        var assertResult = assertThat(mockMvcTester.post()
+                .uri("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .hasStatus(400)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+        assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Validation error");
+        assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(400);
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("無効なメールアドレス形式の場合は400エラーが返されること")
+    void testCreateUser_InvalidEmailFormat() throws Exception {
+        String requestBody = """
+                {
+                    "username": "newuser",
+                    "email": "invalid-email",
+                    "password": "password123"
+                }
+                """;
+        
+        var assertResult = assertThat(mockMvcTester.post()
+                .uri("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .hasStatus(400)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+        assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Validation error");
+        assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(400);
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("パスワードが短すぎる場合は400エラーが返されること")
+    void testCreateUser_PasswordTooShort() throws Exception {
+        String requestBody = """
+                {
+                    "username": "newuser",
+                    "email": "newuser@example.com",
+                    "password": "short"
+                }
+                """;
+        
+        var assertResult = assertThat(mockMvcTester.post()
+                .uri("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .hasStatus(400)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+        assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Validation error");
+        assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(400);
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("ユーザー名が短すぎる場合は400エラーが返されること")
+    void testCreateUser_UsernameTooShort() throws Exception {
+        String requestBody = """
+                {
+                    "username": "ab",
+                    "email": "newuser@example.com",
+                    "password": "password123"
+                }
+                """;
+        
+        var assertResult = assertThat(mockMvcTester.post()
+                .uri("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .hasStatus(400)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+        assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Validation error");
+        assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(400);
+    }
 }
