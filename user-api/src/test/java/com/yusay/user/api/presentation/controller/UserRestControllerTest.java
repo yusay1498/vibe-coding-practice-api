@@ -563,24 +563,11 @@ class UserRestControllerTest {
                 .hasStatus(401);
     }
 
-    @Test
-    @WithMockUser(roles = "ADMIN")
-    @DisplayName("UserServiceが詳細メッセージ付きで例外を投げた場合でも安全なメッセージのみが返されること")
-    @Sql(statements = "DELETE FROM users;")
-    void testDeleteAllUsers_MasksInternalDetails() throws Exception {
-        // user.delete-all.max-allowed-deletionsを1に設定して上限超過を発生させる
-        // Note: この設定はapplication-test.propertiesで行う必要があるため、
-        // 実際のテストでは環境設定または別のアプローチが必要
-        // ここでは、コントローラー層が常に安全なメッセージを返すことを検証
-        var assertResult = assertThat(mockMvcTester.delete()
-                .uri("/users")
-                .header("X-Confirm-Delete-All", "true"))
-                .hasStatusOk();
-
-        // 正常系なので詳細チェック
-        assertResult.bodyJson().extractingPath("$.deletedCount").asNumber().isEqualTo(0);
-        
-        // エラーメッセージに数値やその他の内部情報が含まれないことを確認
-        // （この場合は成功レスポンスなので、別のテストで検証が必要）
-    }
+    // 注意: 内部詳細マスキングの検証について
+    // GlobalExceptionHandlerは常にErrorMessages.DELETE_ALL_NOT_ALLOWEDを返すため、
+    // UserServiceがどのような詳細メッセージを例外に含めても、
+    // クライアントには安全なメッセージのみが返される。
+    // この動作は既存のテスト（確認ヘッダーなし、不正値）で検証済み。
+    // サービス層の内部メッセージ（削除上限値など）は
+    // UserServiceTestで検証されている。
 }
