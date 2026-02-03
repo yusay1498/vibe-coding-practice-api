@@ -43,7 +43,7 @@ class UserServiceTest {
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
         Clock clock = Clock.fixed(Instant.parse("2024-01-01T10:00:00Z"), ZoneId.of("UTC"));
-        UserService userService = new UserService(userRepository, userDomainService, clock);
+        UserService userService = new UserService(userRepository, userDomainService, clock, "dev", 1000);
         
         String username = "newuser";
         String email = "newuser@example.com";
@@ -103,7 +103,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC());
+        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC(), "default", 1000);
         
         String username = "newuser";
         String email = "existing@example.com";
@@ -142,7 +142,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC());
+        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC(), "default", 1000);
         
         String username = "existinguser";
         String email = "newuser@example.com";
@@ -182,7 +182,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC());
+        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC(), "default", 1000);
         
         String username = "newuser";
         String email = "newuser@example.com";
@@ -241,7 +241,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC());
+        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC(), "default", 1000);
         
         String userId = "test-user-id";
         LocalDateTime fixedDateTime = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
@@ -273,7 +273,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC());
+        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC(), "default", 1000);
         
         String userId = "non-existent-id";
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
@@ -291,7 +291,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC());
+        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC(), "default", 1000);
         
         LocalDateTime fixedDateTime = LocalDateTime.of(2024, 1, 1, 10, 0, 0);
         List<User> expectedUsers = List.of(
@@ -337,7 +337,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC());
+        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC(), "default", 1000);
         
         when(userRepository.findAll()).thenReturn(List.of());
 
@@ -355,7 +355,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC());
+        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC(), "default", 1000);
         
         String userId = "test-user-id";
         when(userRepository.deleteById(userId)).thenReturn(1);
@@ -373,7 +373,7 @@ class UserServiceTest {
         // Arrange
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
-        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC());
+        UserService userService = new UserService(userRepository, userDomainService, Clock.systemUTC(), "default", 1000);
         
         String userId = "non-existent-id";
         when(userRepository.deleteById(userId)).thenReturn(0);
@@ -392,10 +392,7 @@ class UserServiceTest {
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
         Clock clock = Clock.fixed(Instant.parse("2024-01-01T10:00:00Z"), ZoneId.of("UTC"));
-        UserService userService = new UserService(userRepository, userDomainService, clock);
-        
-        // 開発環境を設定
-        ReflectionTestUtils.setField(userService, "activeProfile", "dev");
+        UserService userService = new UserService(userRepository, userDomainService, clock, "dev", 1000);
         
         List<User> users = List.of(
             new User("id1", "user1", "user1@example.com", "hash1", true, true, true, true, 
@@ -427,10 +424,7 @@ class UserServiceTest {
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
         Clock clock = Clock.fixed(Instant.parse("2024-01-01T10:00:00Z"), ZoneId.of("UTC"));
-        UserService userService = new UserService(userRepository, userDomainService, clock);
-        
-        // 開発環境を設定
-        ReflectionTestUtils.setField(userService, "activeProfile", "test");
+        UserService userService = new UserService(userRepository, userDomainService, clock, "test", 1000);
         
         when(userRepository.findAll()).thenReturn(List.of());
         doNothing().when(userDomainService).validateDeleteAll(anyList(), anyInt());
@@ -452,10 +446,7 @@ class UserServiceTest {
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
         Clock clock = Clock.systemUTC();
-        UserService userService = new UserService(userRepository, userDomainService, clock);
-        
-        // 本番環境を設定
-        ReflectionTestUtils.setField(userService, "activeProfile", "prod");
+        UserService userService = new UserService(userRepository, userDomainService, clock, "prod", 1000);
 
         // Act & Assert
         assertThatThrownBy(() -> userService.deleteAll())
@@ -472,10 +463,7 @@ class UserServiceTest {
         UserRepository userRepository = mock(UserRepository.class);
         UserDomainService userDomainService = mock(UserDomainService.class);
         Clock clock = Clock.systemUTC();
-        UserService userService = new UserService(userRepository, userDomainService, clock);
-        
-        // 開発環境を設定
-        ReflectionTestUtils.setField(userService, "activeProfile", "dev");
+        UserService userService = new UserService(userRepository, userDomainService, clock, "dev", 1000);
         
         List<User> users = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
@@ -491,6 +479,53 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.deleteAll())
                 .isInstanceOf(DeleteAllNotAllowedException.class)
                 .hasMessageContaining("削除対象ユーザー数が上限を超えています");
+        
+        verify(userRepository, never()).deleteAll();
+    }
+
+    @Test
+    @DisplayName("deleteAll()は削除後に削除件数が上限を超えた場合に例外をスローする（競合状態の検出）")
+    void deleteAll_ThrowsException_WhenPostDeletionCountExceedsLimit() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        Clock clock = Clock.systemUTC();
+        int maxLimit = 100;
+        UserService userService = new UserService(userRepository, userDomainService, clock, "dev", maxLimit);
+        
+        // 事前検証では上限以下のユーザーが存在
+        List<User> users = new ArrayList<>();
+        for (int i = 0; i < 50; i++) {
+            users.add(new User("id" + i, "user" + i, "user" + i + "@example.com", 
+                "hash", true, true, true, true, LocalDateTime.now(), LocalDateTime.now()));
+        }
+        
+        when(userRepository.findAll()).thenReturn(users);
+        doNothing().when(userDomainService).validateDeleteAll(anyList(), anyInt());
+        // しかし実際には上限を超える数が削除された（競合状態）
+        when(userRepository.deleteAll()).thenReturn(150);
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.deleteAll())
+                .isInstanceOf(DeleteAllNotAllowedException.class)
+                .hasMessageContaining("削除件数（150件）が上限（100件）を超えているため");
+        
+        verify(userRepository).deleteAll();
+    }
+
+    @Test
+    @DisplayName("deleteAll()は複数プロファイルが設定されている場合でも本番環境を正しく検出する")
+    void deleteAll_ThrowsException_WithMultipleProfiles() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        Clock clock = Clock.systemUTC();
+        UserService userService = new UserService(userRepository, userDomainService, clock, "dev,prod,debug", 1000);
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.deleteAll())
+                .isInstanceOf(DeleteAllNotAllowedException.class)
+                .hasMessageContaining("本番環境では全件削除を実行できません");
         
         verify(userRepository, never()).deleteAll();
     }

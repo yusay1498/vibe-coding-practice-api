@@ -23,19 +23,24 @@ import java.util.List;
 public class UserService {
     
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
-    private static final int MAX_ALLOWED_DELETIONS = 1000;
     
     private final UserRepository userRepository;
     private final UserDomainService userDomainService;
     private final Clock clock;
-    
-    @Value("${spring.profiles.active:default}")
-    private String activeProfile;
+    private final String activeProfile;
+    private final int maxAllowedDeletions;
 
-    public UserService(UserRepository userRepository, UserDomainService userDomainService, Clock clock) {
+    public UserService(
+            UserRepository userRepository, 
+            UserDomainService userDomainService, 
+            Clock clock,
+            @Value("${spring.profiles.active:default}") String activeProfile,
+            @Value("${user.delete-all.max-allowed-deletions:1000}") int maxAllowedDeletions) {
         this.userRepository = userRepository;
         this.userDomainService = userDomainService;
         this.clock = clock;
+        this.activeProfile = activeProfile;
+        this.maxAllowedDeletions = maxAllowedDeletions;
     }
 
     /**
@@ -124,17 +129,29 @@ public class UserService {
             throw new DeleteAllNotAllowedException("本番環境では全件削除を実行できません。");
         }
         
-        // 削除前の監査ログ
+        // 削除前の検証（監査ログは検証成功後に記録）
         List<User> usersToDelete = userRepository.findAll();
+        
+        // ドメインルール: 削除件数の事前検証
+        userDomainService.validateDeleteAll(usersToDelete, maxAllowedDeletions);
+        
+        // 検証成功後の監査ログ
         logger.warn("全件削除を開始します。対象ユーザー数: {}, 環境: {}", 
             usersToDelete.size(), activeProfile);
-        
-        // ドメインルール: 削除件数の検証
-        userDomainService.validateDeleteAll(usersToDelete, MAX_ALLOWED_DELETIONS);
         
         // 削除実行
         LocalDateTime executedAt = LocalDateTime.now(clock);
         int deletedCount = userRepository.deleteAll();
+        
+        // ドメインルール: 削除後の実際の削除件数を再検証し、競合状態を検出
+        if (deletedCount > maxAllowedDeletions) {
+            logger.error("全件削除で削除件数が上限を超えました。削除件数: {}, 上限: {}, 環境: {}",
+                deletedCount, maxAllowedDeletions, activeProfile);
+            // @Transactional により、この例外で deleteAll の削除はロールバックされる
+            throw new DeleteAllNotAllowedException(
+                String.format("削除件数（%d件）が上限（%d件）を超えているため、全件削除をロールバックしました。",
+                    deletedCount, maxAllowedDeletions));
+        }
         
         // 削除後の監査ログ
         logger.warn("全件削除が完了しました。削除件数: {}, 実行日時: {}, 環境: {}", 
@@ -145,11 +162,23 @@ public class UserService {
     
     /**
      * 現在の環境が本番環境かどうかを判定
+     * 複数プロファイルのカンマ区切りにも対応
      * 
      * @return 本番環境の場合true
      */
     private boolean isProductionEnvironment() {
-        return "prod".equalsIgnoreCase(activeProfile) || 
-               "production".equalsIgnoreCase(activeProfile);
+        if (activeProfile == null || activeProfile.isBlank()) {
+            return false;
+        }
+
+        String[] profiles = activeProfile.split(",");
+        for (String profile : profiles) {
+            String trimmed = profile.trim();
+            if ("prod".equalsIgnoreCase(trimmed) || "production".equalsIgnoreCase(trimmed)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
