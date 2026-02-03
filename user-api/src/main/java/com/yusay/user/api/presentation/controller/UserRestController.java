@@ -1,5 +1,6 @@
 package com.yusay.user.api.presentation.controller;
 
+import com.yusay.user.api.application.dto.DeleteAllResult;
 import com.yusay.user.api.application.service.UserService;
 import com.yusay.user.api.domain.entity.User;
 import com.yusay.user.api.presentation.dto.CreateUserRequest;
@@ -68,5 +69,11 @@ public class UserRestController {
     public ResponseEntity<Void> deleteUser(@PathVariable String id) {
         userService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping
+    public ResponseEntity<DeleteAllResult> deleteAllUsers() {
+        DeleteAllResult result = userService.deleteAll();
+        return ResponseEntity.ok(result);
     }
 }

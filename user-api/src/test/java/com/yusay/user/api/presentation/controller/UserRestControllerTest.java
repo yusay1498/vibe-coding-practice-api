@@ -426,4 +426,47 @@ class UserRestControllerTest {
         assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Validation error");
         assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(400);
     }
+
+    @Test
+    @WithMockUser
+    @DisplayName("全ユーザーを削除できること")
+    @Sql(statements = {
+            """
+            DELETE FROM users;
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES 
+                ('650e8400-e29b-41d4-a716-446655440001', 'user1', 'user1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true),
+                ('650e8400-e29b-41d4-a716-446655440002', 'user2', 'user2@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true),
+                ('650e8400-e29b-41d4-a716-446655440003', 'user3', 'user3@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', false);
+            """
+    })
+    void testDeleteAllUsers_Success() throws Exception {
+        var assertResult = assertThat(mockMvcTester.delete().uri("/users"))
+                .hasStatusOk()
+                .hasContentType(MediaType.APPLICATION_JSON);
+
+        assertResult.bodyJson().extractingPath("$.deletedCount").asNumber().isEqualTo(3);
+        assertResult.bodyJson().extractingPath("$.environment").asString().isNotBlank();
+        assertResult.bodyJson().extractingPath("$.executedAt").asString().isNotBlank();
+        
+        // 削除後に全ユーザーを取得すると空のリストが返されることを確認
+        var usersResult = assertThat(mockMvcTester.get().uri("/users"))
+                .hasStatusOk()
+                .hasContentType(MediaType.APPLICATION_JSON);
+        
+        usersResult.bodyJson().extractingPath("$").asList().isEmpty();
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("ユーザーが存在しない場合でも全件削除が成功すること")
+    @Sql(statements = "DELETE FROM users;")
+    void testDeleteAllUsers_EmptyDatabase() throws Exception {
+        var assertResult = assertThat(mockMvcTester.delete().uri("/users"))
+                .hasStatusOk()
+                .hasContentType(MediaType.APPLICATION_JSON);
+
+        assertResult.bodyJson().extractingPath("$.deletedCount").asNumber().isEqualTo(0);
+        assertResult.bodyJson().extractingPath("$.environment").asString().isNotBlank();
+    }
 }
