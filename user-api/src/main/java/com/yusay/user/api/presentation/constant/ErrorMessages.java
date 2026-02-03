@@ -14,6 +14,6 @@ public final class ErrorMessages {
     
     private ErrorMessages() {
         // ユーティリティクラスのためインスタンス化を禁止
-        throw new AssertionError("Cannot instantiate ErrorMessages");
+        throw new AssertionError("ErrorMessagesはインスタンス化できません");
     }
 }
