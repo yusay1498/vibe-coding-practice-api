@@ -1,5 +1,6 @@
 package com.yusay.user.api.presentation.advice;
 
+import com.yusay.user.api.domain.exception.DeleteAllNotAllowedException;
 import com.yusay.user.api.domain.exception.UserNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -20,5 +21,14 @@ public class GlobalExceptionHandler {
         problemDetail.setProperty("timestamp", OffsetDateTime.now());
         problemDetail.setProperty("path", request.getDescription(false).replace("uri=", ""));
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
+    @ExceptionHandler(DeleteAllNotAllowedException.class)
+    public ResponseEntity<ProblemDetail> handleDeleteAllNotAllowed(DeleteAllNotAllowedException ex, WebRequest request) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        problemDetail.setTitle("Delete all operation not allowed");
+        problemDetail.setProperty("timestamp", OffsetDateTime.now());
+        problemDetail.setProperty("path", request.getDescription(false).replace("uri=", ""));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problemDetail);
     }
 }
