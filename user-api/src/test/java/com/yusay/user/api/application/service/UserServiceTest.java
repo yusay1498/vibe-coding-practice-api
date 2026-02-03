@@ -371,4 +371,40 @@ class UserServiceTest {
                 .hasMessage("User not found: " + userId);
         verify(userRepository).deleteById(userId);
     }
+
+    @Test
+    @DisplayName("deleteAll()は全ユーザーを削除して削除件数を返す")
+    void deleteAll_DeletesAllUsers_AndReturnsCount() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        UserService userService = new UserService(userRepository, userDomainService);
+        
+        when(userRepository.deleteAll()).thenReturn(3);
+
+        // Act
+        int deletedCount = userService.deleteAll();
+
+        // Assert
+        assertThat(deletedCount).isEqualTo(3);
+        verify(userRepository).deleteAll();
+    }
+
+    @Test
+    @DisplayName("deleteAll()はユーザーが存在しない場合に0を返す")
+    void deleteAll_ReturnsZero_WhenNoUsersExist() {
+        // Arrange
+        UserRepository userRepository = mock(UserRepository.class);
+        UserDomainService userDomainService = mock(UserDomainService.class);
+        UserService userService = new UserService(userRepository, userDomainService);
+        
+        when(userRepository.deleteAll()).thenReturn(0);
+
+        // Act
+        int deletedCount = userService.deleteAll();
+
+        // Assert
+        assertThat(deletedCount).isEqualTo(0);
+        verify(userRepository).deleteAll();
+    }
 }
