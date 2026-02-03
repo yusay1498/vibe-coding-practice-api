@@ -4,7 +4,6 @@ import com.yusay.user.api.application.service.UserService;
 import com.yusay.user.api.domain.entity.User;
 import com.yusay.user.api.presentation.dto.CreateUserRequest;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,7 +13,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -47,7 +48,14 @@ public class UserRestController {
                 passwordHash
         );
         
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+        // 作成されたリソースのURIを構築
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(createdUser.id())
+                .toUri();
+        
+        return ResponseEntity.created(location).body(createdUser);
     }
 
     @GetMapping("/{id}")
