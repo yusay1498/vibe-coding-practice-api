@@ -137,19 +137,21 @@ public class UserService {
         
         // メールアドレスの重複チェック（変更される場合のみ）
         if (email != null && !email.equals(existingUser.email())) {
-            Optional<User> userWithEmail = userRepository.findByEmail(email);
+            final String emailToCheck = email;
+            Optional<User> userWithEmail = userRepository.findByEmail(emailToCheck);
             if (userWithEmail.isPresent() && !userWithEmail.get().id().equals(id)) {
                 // 自分自身以外のユーザーがそのメールアドレスを使用している場合は例外
-                throw new DuplicateUserException(email);
+                throw new DuplicateUserException(emailToCheck);
             }
         }
         
         // ユーザー名の重複チェック（変更される場合のみ）
         if (username != null && !username.equals(existingUser.username())) {
-            Optional<User> userWithUsername = userRepository.findByUsername(username);
+            final String usernameToCheck = username;
+            Optional<User> userWithUsername = userRepository.findByUsername(usernameToCheck);
             if (userWithUsername.isPresent() && !userWithUsername.get().id().equals(id)) {
                 // 自分自身以外のユーザーがそのユーザー名を使用している場合は例外
-                throw new DuplicateUserException(username);
+                throw new DuplicateUserException(usernameToCheck);
             }
         }
         
@@ -173,15 +175,17 @@ public class UserService {
             // 同時リクエストにより重複チェック後にデータが変更された場合
             // データベースのUNIQUE制約により例外が発生するため、適切な例外に変換
             if (email != null) {
-                Optional<User> userWithEmail = userRepository.findByEmail(email);
+                final String emailToCheck = email;
+                Optional<User> userWithEmail = userRepository.findByEmail(emailToCheck);
                 if (userWithEmail.isPresent() && !userWithEmail.get().id().equals(id)) {
-                    throw new DuplicateUserException(email);
+                    throw new DuplicateUserException(emailToCheck);
                 }
             }
             if (username != null) {
-                Optional<User> userWithUsername = userRepository.findByUsername(username);
+                final String usernameToCheck = username;
+                Optional<User> userWithUsername = userRepository.findByUsername(usernameToCheck);
                 if (userWithUsername.isPresent() && !userWithUsername.get().id().equals(id)) {
-                    throw new DuplicateUserException(username);
+                    throw new DuplicateUserException(usernameToCheck);
                 }
             }
             // 他のデータ整合性エラーの場合は元の例外を再スロー

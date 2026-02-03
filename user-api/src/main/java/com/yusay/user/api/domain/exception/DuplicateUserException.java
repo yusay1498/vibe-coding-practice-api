@@ -5,6 +5,6 @@ package com.yusay.user.api.domain.exception;
  */
 public class DuplicateUserException extends RuntimeException {
     public DuplicateUserException(String identifier) {
-        super("ユーザーが既に存在します: " + identifier);
+        super("ユーザーが既に存在します: " + (identifier != null ? identifier : ""));
     }
 }
