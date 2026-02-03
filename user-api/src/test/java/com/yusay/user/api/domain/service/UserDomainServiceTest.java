@@ -293,4 +293,42 @@ class UserDomainServiceTest {
         // Act & Assert - 例外がスローされないことを確認
         service.validateDeleteAll(List.of(), 100);
     }
+
+    @Test
+    @DisplayName("validateDeleteAll()はmaxAllowedDeletionsが0以下の場合に例外をスローする")
+    void validateDeleteAll_ThrowsException_WhenMaxAllowedDeletionsIsInvalid() {
+        // Arrange
+        Clock clock = Clock.systemUTC();
+        UserDomainService service = new UserDomainService(clock);
+        List<User> users = List.of(
+            new User("id1", "user1", "user1@example.com", "hash", true, true, true, true, 
+                LocalDateTime.now(), LocalDateTime.now())
+        );
+        
+        // Act & Assert - 0の場合
+        assertThatThrownBy(() -> service.validateDeleteAll(users, 0))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("maxAllowedDeletions must be positive");
+        
+        // Act & Assert - 負の数の場合
+        assertThatThrownBy(() -> service.validateDeleteAll(users, -1))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("maxAllowedDeletions must be positive");
+    }
+
+    @Test
+    @DisplayName("getCurrentTime()は現在時刻を返す")
+    void getCurrentTime_ReturnsCurrentTime() {
+        // Arrange
+        Instant fixedInstant = Instant.parse("2024-01-01T10:00:00Z");
+        Clock fixedClock = Clock.fixed(fixedInstant, ZoneId.systemDefault());
+        LocalDateTime expectedTime = LocalDateTime.ofInstant(fixedInstant, ZoneId.systemDefault());
+        UserDomainService service = new UserDomainService(fixedClock);
+        
+        // Act
+        LocalDateTime result = service.getCurrentTime();
+        
+        // Assert
+        assertThat(result).isEqualTo(expectedTime);
+    }
 }

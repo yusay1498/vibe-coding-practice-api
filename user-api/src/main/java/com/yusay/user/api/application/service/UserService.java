@@ -26,20 +26,23 @@ public class UserService {
     
     private final UserRepository userRepository;
     private final UserDomainService userDomainService;
-    private final Clock clock;
     private final String activeProfile;
     private final int maxAllowedDeletions;
 
     public UserService(
             UserRepository userRepository, 
-            UserDomainService userDomainService, 
-            Clock clock,
+            UserDomainService userDomainService,
             @Value("${spring.profiles.active:default}") String activeProfile,
             @Value("${user.delete-all.max-allowed-deletions:1000}") int maxAllowedDeletions) {
         this.userRepository = userRepository;
         this.userDomainService = userDomainService;
-        this.clock = clock;
         this.activeProfile = activeProfile;
+        
+        // maxAllowedDeletionsの妥当性検証
+        if (maxAllowedDeletions <= 0) {
+            throw new IllegalArgumentException(
+                String.format("maxAllowedDeletions must be positive, but was: %d", maxAllowedDeletions));
+        }
         this.maxAllowedDeletions = maxAllowedDeletions;
     }
 
@@ -133,17 +136,27 @@ public class UserService {
         List<User> usersToDelete = userRepository.findAll();
         
         // ドメインルール: 削除件数の事前検証
-        userDomainService.validateDeleteAll(usersToDelete, maxAllowedDeletions);
+        try {
+            userDomainService.validateDeleteAll(usersToDelete, maxAllowedDeletions);
+        } catch (DeleteAllNotAllowedException e) {
+            logger.error("全件削除の事前検証で失敗しました。対象ユーザー数: {}, 上限: {}, 環境: {}",
+                usersToDelete.size(), maxAllowedDeletions, activeProfile);
+            throw e;
+        }
         
         // 検証成功後の監査ログ
         logger.warn("全件削除を開始します。対象ユーザー数: {}, 環境: {}", 
             usersToDelete.size(), activeProfile);
         
         // 削除実行
-        LocalDateTime executedAt = LocalDateTime.now(clock);
+        LocalDateTime executedAt = userDomainService.getCurrentTime();
         int deletedCount = userRepository.deleteAll();
         
         // ドメインルール: 削除後の実際の削除件数を再検証し、競合状態を検出
+        // 注意: この検証は、事前検証と削除実行の間にデータが追加された場合（競合状態）や、
+        // deleteAll()の実装がfindAll()と異なる挙動をする場合（実装バグ）を検出するためのものです。
+        // 通常の競合状態では、事前検証で上限以下と判定されたデータが削除されるため、
+        // この検証で上限を超えることはほぼありませんが、安全性のために実装しています。
         if (deletedCount > maxAllowedDeletions) {
             logger.error("全件削除で削除件数が上限を超えました。削除件数: {}, 上限: {}, 環境: {}",
                 deletedCount, maxAllowedDeletions, activeProfile);
