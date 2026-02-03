@@ -22,6 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("UserRestController のテスト")
 class UserRestControllerTest {
 
+    private static final String DELETE_ALL_NOT_ALLOWED_MESSAGE = "全件削除は現在の環境またはデータ状態では実行できません";
+
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.sql.init.mode", () -> "always");
@@ -491,7 +493,7 @@ class UserRestControllerTest {
 
         assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Delete all not allowed");
         assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(403);
-        assertResult.bodyJson().extractingPath("$.detail").asString().isEqualTo("全件削除は現在の環境またはデータ状態では実行できません");
+        assertResult.bodyJson().extractingPath("$.detail").asString().isEqualTo(DELETE_ALL_NOT_ALLOWED_MESSAGE);
     }
 
     @Test
@@ -513,7 +515,7 @@ class UserRestControllerTest {
 
         assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Delete all not allowed");
         assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(403);
-        assertResult.bodyJson().extractingPath("$.detail").asString().isEqualTo("全件削除は現在の環境またはデータ状態では実行できません");
+        assertResult.bodyJson().extractingPath("$.detail").asString().isEqualTo(DELETE_ALL_NOT_ALLOWED_MESSAGE);
     }
 
     @Test
