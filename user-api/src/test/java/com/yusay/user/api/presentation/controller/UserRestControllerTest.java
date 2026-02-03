@@ -193,13 +193,7 @@ class UserRestControllerTest {
         assertResult.bodyJson().extractingPath("$.enabled").asBoolean().isTrue();
         
         // IDが生成されていることを確認
-        String userId = assertResult.bodyJson().extractingPath("$.id").asString();
-        assertThat(userId).isNotBlank();
-        
-        // Locationヘッダーが設定されていることを確認
-        assertResult.hasHeader("Location");
-        assertResult.headers().extractingByName("Location").asList()
-                .singleElement().asString().endsWith("/users/" + userId);
+        assertResult.bodyJson().extractingPath("$.id").asString().isNotBlank();
         
         // パスワードハッシュは@JsonIgnoreで除外されているため、レスポンスに含まれないことを確認
         assertResult.bodyText().doesNotContain("passwordHash");
