@@ -105,6 +105,85 @@ public class UserService {
         return userRepository.findAll();
     }
 
+    /**
+     * 既存ユーザーの情報を更新する
+     * 
+     * @param id ユーザーID
+     * @param username 新しいユーザー名（nullの場合は既存値を保持）
+     * @param email 新しいメールアドレス（nullの場合は既存値を保持）
+     * @param passwordHash 新しいパスワードハッシュ（nullの場合は既存値を保持）
+     * @param enabled 新しい有効フラグ（nullの場合は既存値を保持）
+     * @param accountNonExpired 新しいアカウント有効期限切れフラグ（nullの場合は既存値を保持）
+     * @param accountNonLocked 新しいアカウントロックフラグ（nullの場合は既存値を保持）
+     * @param credentialsNonExpired 新しい認証情報有効期限切れフラグ（nullの場合は既存値を保持）
+     * @return 更新されたユーザー
+     * @throws UserNotFoundException ユーザーが見つからない場合
+     * @throws DuplicateUserException メールアドレスまたはユーザー名が他のユーザーと重複する場合
+     */
+    public User update(
+            String id,
+            String username,
+            String email,
+            String passwordHash,
+            Boolean enabled,
+            Boolean accountNonExpired,
+            Boolean accountNonLocked,
+            Boolean credentialsNonExpired) {
+        
+        // 更新対象のユーザーを取得
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
+        
+        // メールアドレスの重複チェック（変更される場合のみ）
+        if (email != null && !email.equals(existingUser.email())) {
+            userRepository.findByEmail(email).ifPresent(user -> {
+                // 自分自身以外のユーザーがそのメールアドレスを使用している場合は例外
+                if (!user.id().equals(id)) {
+                    throw new DuplicateUserException(email);
+                }
+            });
+        }
+        
+        // ユーザー名の重複チェック（変更される場合のみ）
+        if (username != null && !username.equals(existingUser.username())) {
+            userRepository.findByUsername(username).ifPresent(user -> {
+                // 自分自身以外のユーザーがそのユーザー名を使用している場合は例外
+                if (!user.id().equals(id)) {
+                    throw new DuplicateUserException(username);
+                }
+            });
+        }
+        
+        // ドメインサービスを使用してユーザーを更新
+        User updatedUser = userDomainService.updateUser(
+                existingUser,
+                username,
+                email,
+                passwordHash,
+                enabled,
+                accountNonExpired,
+                accountNonLocked,
+                credentialsNonExpired
+        );
+        
+        // リポジトリに保存
+        // 競合状態（race condition）に対処するため、UNIQUE制約違反を捕捉
+        try {
+            return userRepository.save(updatedUser);
+        } catch (DataIntegrityViolationException e) {
+            // 同時リクエストにより重複チェック後にデータが変更された場合
+            // データベースのUNIQUE制約により例外が発生するため、適切な例外に変換
+            if (email != null && userRepository.findByEmail(email).map(u -> !u.id().equals(id)).orElse(false)) {
+                throw new DuplicateUserException(email);
+            }
+            if (username != null && userRepository.findByUsername(username).map(u -> !u.id().equals(id)).orElse(false)) {
+                throw new DuplicateUserException(username);
+            }
+            // 他のデータ整合性エラーの場合は元の例外を再スロー
+            throw e;
+        }
+    }
+
     public void delete(String id) {
         int deletedCount = userRepository.deleteById(id);
         if (deletedCount == 0) {
