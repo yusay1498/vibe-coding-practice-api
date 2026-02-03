@@ -1,6 +1,8 @@
 package com.yusay.user.api.presentation.controller;
 
 import com.yusay.user.api.TestcontainersConfiguration;
+import com.yusay.user.api.presentation.constant.ErrorMessages;
+import com.yusay.user.api.presentation.constant.HttpHeaders;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -426,4 +428,147 @@ class UserRestControllerTest {
         assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Validation error");
         assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(400);
     }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("全ユーザーを削除できること")
+    @Sql(statements = {
+            """
+            DELETE FROM users;
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES 
+                ('650e8400-e29b-41d4-a716-446655440001', 'user1', 'user1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true),
+                ('650e8400-e29b-41d4-a716-446655440002', 'user2', 'user2@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true),
+                ('650e8400-e29b-41d4-a716-446655440003', 'user3', 'user3@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', false);
+            """
+    })
+    void testDeleteAllUsers_Success() throws Exception {
+        var assertResult = assertThat(mockMvcTester.delete()
+                .uri("/users")
+                .header(HttpHeaders.CONFIRM_DELETE_ALL, "true"))
+                .hasStatusOk()
+                .hasContentType(MediaType.APPLICATION_JSON);
+
+        assertResult.bodyJson().extractingPath("$.deletedCount").asNumber().isEqualTo(3);
+        assertResult.bodyJson().extractingPath("$.environment").asString().isNotBlank();
+        assertResult.bodyJson().extractingPath("$.executedAt").asString().isNotBlank();
+        
+        // 削除後に全ユーザーを取得すると空のリストが返されることを確認
+        var usersResult = assertThat(mockMvcTester.get().uri("/users"))
+                .hasStatusOk()
+                .hasContentType(MediaType.APPLICATION_JSON);
+        
+        usersResult.bodyJson().extractingPath("$").asList().isEmpty();
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("ユーザーが存在しない場合でも全件削除が成功すること")
+    @Sql(statements = "DELETE FROM users;")
+    void testDeleteAllUsers_EmptyDatabase() throws Exception {
+        var assertResult = assertThat(mockMvcTester.delete()
+                .uri("/users")
+                .header(HttpHeaders.CONFIRM_DELETE_ALL, "true"))
+                .hasStatusOk()
+                .hasContentType(MediaType.APPLICATION_JSON);
+
+        assertResult.bodyJson().extractingPath("$.deletedCount").asNumber().isEqualTo(0);
+        assertResult.bodyJson().extractingPath("$.environment").asString().isNotBlank();
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("確認ヘッダーなしで全件削除を試行すると403エラーが返されること")
+    @Sql(statements = {
+            """
+            DELETE FROM users;
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES ('750e8400-e29b-41d4-a716-446655440001', 'user1', 'user1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true);
+            """
+    })
+    void testDeleteAllUsers_WithoutConfirmationHeader() throws Exception {
+        var assertResult = assertThat(mockMvcTester.delete().uri("/users"))
+                .hasStatus(403)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+        assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Delete all not allowed");
+        assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(403);
+        assertResult.bodyJson().extractingPath("$.detail").asString().isEqualTo(ErrorMessages.DELETE_ALL_NOT_ALLOWED);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("確認ヘッダーの値が不正な場合に403エラーが返されること")
+    @Sql(statements = {
+            """
+            DELETE FROM users;
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES ('750e8400-e29b-41d4-a716-446655440001', 'user1', 'user1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true);
+            """
+    })
+    void testDeleteAllUsers_WithInvalidConfirmationHeader() throws Exception {
+        var assertResult = assertThat(mockMvcTester.delete()
+                .uri("/users")
+                .header(HttpHeaders.CONFIRM_DELETE_ALL, "false"))
+                .hasStatus(403)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+        assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Delete all not allowed");
+        assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(403);
+        assertResult.bodyJson().extractingPath("$.detail").asString().isEqualTo(ErrorMessages.DELETE_ALL_NOT_ALLOWED);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("確認ヘッダーの値が大文字でも削除できること（大文字小文字を区別しない）")
+    @Sql(statements = {
+            """
+            DELETE FROM users;
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES ('750e8400-e29b-41d4-a716-446655440001', 'user1', 'user1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true);
+            """
+    })
+    void testDeleteAllUsers_WithUppercaseConfirmationHeader() throws Exception {
+        var assertResult = assertThat(mockMvcTester.delete()
+                .uri("/users")
+                .header(HttpHeaders.CONFIRM_DELETE_ALL, "TRUE"))
+                .hasStatusOk()
+                .hasContentType(MediaType.APPLICATION_JSON);
+
+        assertResult.bodyJson().extractingPath("$.deletedCount").asNumber().isEqualTo(1);
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("管理者ロールなしで全件削除を試行すると403エラーが返されること")
+    @Sql(statements = {
+            """
+            DELETE FROM users;
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES ('750e8400-e29b-41d4-a716-446655440001', 'user1', 'user1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true);
+            """
+    })
+    void testDeleteAllUsers_WithoutAdminRole() throws Exception {
+        assertThat(mockMvcTester.delete()
+                .uri("/users")
+                .header(HttpHeaders.CONFIRM_DELETE_ALL, "true"))
+                .hasStatus(403);
+    }
+
+    @Test
+    @DisplayName("未認証で全件削除を試行すると401エラーが返されること")
+    void testDeleteAllUsers_Unauthenticated() throws Exception {
+        assertThat(mockMvcTester.delete()
+                .uri("/users")
+                .header(HttpHeaders.CONFIRM_DELETE_ALL, "true"))
+                .hasStatus(401);
+    }
+
+    // 注意: 内部詳細マスキングの検証について
+    // GlobalExceptionHandlerは常にErrorMessages.DELETE_ALL_NOT_ALLOWEDを返すため、
+    // UserServiceがどのような詳細メッセージを例外に含めても、
+    // クライアントには安全なメッセージのみが返される。
+    // この動作は既存のテスト（確認ヘッダーなし、不正値）で検証済み。
+    // サービス層の内部メッセージ（削除上限値など）は
+    // UserServiceTestで検証されている。
 }

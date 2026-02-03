@@ -1,7 +1,11 @@
 package com.yusay.user.api.presentation.controller;
 
+import com.yusay.user.api.application.dto.DeleteAllResult;
 import com.yusay.user.api.application.service.UserService;
 import com.yusay.user.api.domain.entity.User;
+import com.yusay.user.api.domain.exception.DeleteAllNotAllowedException;
+import com.yusay.user.api.presentation.constant.ErrorMessages;
+import com.yusay.user.api.presentation.constant.HttpHeaders;
 import com.yusay.user.api.presentation.dto.CreateUserRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -21,6 +26,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/users")
 public class UserRestController {
+    
+    private static final String CONFIRM_VALUE = "true";
     
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
@@ -68,5 +75,17 @@ public class UserRestController {
     public ResponseEntity<Void> deleteUser(@PathVariable String id) {
         userService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping
+    public ResponseEntity<DeleteAllResult> deleteAllUsers(
+            @RequestHeader(value = HttpHeaders.CONFIRM_DELETE_ALL, required = false) String confirmHeader) {
+        // 破壊的操作のため、確認ヘッダーを要求
+        if (confirmHeader == null || !CONFIRM_VALUE.equalsIgnoreCase(confirmHeader)) {
+            throw new DeleteAllNotAllowedException(ErrorMessages.DELETE_ALL_NOT_ALLOWED);
+        }
+        
+        DeleteAllResult result = userService.deleteAll();
+        return ResponseEntity.ok(result);
     }
 }

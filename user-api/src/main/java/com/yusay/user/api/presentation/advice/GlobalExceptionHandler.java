@@ -1,7 +1,11 @@
 package com.yusay.user.api.presentation.advice;
 
+import com.yusay.user.api.domain.exception.DeleteAllNotAllowedException;
 import com.yusay.user.api.domain.exception.DuplicateUserException;
 import com.yusay.user.api.domain.exception.UserNotFoundException;
+import com.yusay.user.api.presentation.constant.ErrorMessages;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +19,8 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ProblemDetail> handleUserNotFound(UserNotFoundException ex, WebRequest request) {
@@ -50,5 +56,17 @@ public class GlobalExceptionHandler {
         problemDetail.setProperty("timestamp", OffsetDateTime.now());
         problemDetail.setProperty("path", request.getDescription(false).replace("uri=", ""));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
+
+    @ExceptionHandler(DeleteAllNotAllowedException.class)
+    public ResponseEntity<ProblemDetail> handleDeleteAllNotAllowed(DeleteAllNotAllowedException ex, WebRequest request) {
+        // セキュリティ: 内部情報（削除上限値等）を公開せず、汎用的なメッセージを返す
+        // 例外メッセージの詳細はログに記録
+        logger.warn("全件削除が拒否されました: {}", ex.getMessage(), ex);
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ErrorMessages.DELETE_ALL_NOT_ALLOWED);
+        problemDetail.setTitle("Delete all not allowed");
+        problemDetail.setProperty("timestamp", OffsetDateTime.now());
+        problemDetail.setProperty("path", request.getDescription(false).replace("uri=", ""));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problemDetail);
     }
 }
