@@ -2,6 +2,7 @@ package com.yusay.user.api.presentation.controller;
 
 import com.yusay.user.api.TestcontainersConfiguration;
 import com.yusay.user.api.presentation.constant.ErrorMessages;
+import com.yusay.user.api.presentation.constant.HttpHeaders;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -444,7 +445,7 @@ class UserRestControllerTest {
     void testDeleteAllUsers_Success() throws Exception {
         var assertResult = assertThat(mockMvcTester.delete()
                 .uri("/users")
-                .header("X-Confirm-Delete-All", "true"))
+                .header(HttpHeaders.CONFIRM_DELETE_ALL, "true"))
                 .hasStatusOk()
                 .hasContentType(MediaType.APPLICATION_JSON);
 
@@ -467,7 +468,7 @@ class UserRestControllerTest {
     void testDeleteAllUsers_EmptyDatabase() throws Exception {
         var assertResult = assertThat(mockMvcTester.delete()
                 .uri("/users")
-                .header("X-Confirm-Delete-All", "true"))
+                .header(HttpHeaders.CONFIRM_DELETE_ALL, "true"))
                 .hasStatusOk()
                 .hasContentType(MediaType.APPLICATION_JSON);
 
@@ -508,7 +509,7 @@ class UserRestControllerTest {
     void testDeleteAllUsers_WithInvalidConfirmationHeader() throws Exception {
         var assertResult = assertThat(mockMvcTester.delete()
                 .uri("/users")
-                .header("X-Confirm-Delete-All", "false"))
+                .header(HttpHeaders.CONFIRM_DELETE_ALL, "false"))
                 .hasStatus(403)
                 .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
 
@@ -530,7 +531,7 @@ class UserRestControllerTest {
     void testDeleteAllUsers_WithUppercaseConfirmationHeader() throws Exception {
         var assertResult = assertThat(mockMvcTester.delete()
                 .uri("/users")
-                .header("X-Confirm-Delete-All", "TRUE"))
+                .header(HttpHeaders.CONFIRM_DELETE_ALL, "TRUE"))
                 .hasStatusOk()
                 .hasContentType(MediaType.APPLICATION_JSON);
 
@@ -550,7 +551,7 @@ class UserRestControllerTest {
     void testDeleteAllUsers_WithoutAdminRole() throws Exception {
         assertThat(mockMvcTester.delete()
                 .uri("/users")
-                .header("X-Confirm-Delete-All", "true"))
+                .header(HttpHeaders.CONFIRM_DELETE_ALL, "true"))
                 .hasStatus(403);
     }
 
@@ -559,7 +560,7 @@ class UserRestControllerTest {
     void testDeleteAllUsers_Unauthenticated() throws Exception {
         assertThat(mockMvcTester.delete()
                 .uri("/users")
-                .header("X-Confirm-Delete-All", "true"))
+                .header(HttpHeaders.CONFIRM_DELETE_ALL, "true"))
                 .hasStatus(401);
     }
 

@@ -5,6 +5,7 @@ import com.yusay.user.api.application.service.UserService;
 import com.yusay.user.api.domain.entity.User;
 import com.yusay.user.api.domain.exception.DeleteAllNotAllowedException;
 import com.yusay.user.api.presentation.constant.ErrorMessages;
+import com.yusay.user.api.presentation.constant.HttpHeaders;
 import com.yusay.user.api.presentation.dto.CreateUserRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +27,6 @@ import java.util.List;
 @RequestMapping("/users")
 public class UserRestController {
     
-    private static final String CONFIRM_DELETE_ALL_HEADER = "X-Confirm-Delete-All";
     private static final String CONFIRM_VALUE = "true";
     
     private final UserService userService;
@@ -79,7 +79,7 @@ public class UserRestController {
 
     @DeleteMapping
     public ResponseEntity<DeleteAllResult> deleteAllUsers(
-            @RequestHeader(value = CONFIRM_DELETE_ALL_HEADER, required = false) String confirmHeader) {
+            @RequestHeader(value = HttpHeaders.CONFIRM_DELETE_ALL, required = false) String confirmHeader) {
         // 破壊的操作のため、確認ヘッダーを要求
         if (confirmHeader == null || !CONFIRM_VALUE.equalsIgnoreCase(confirmHeader)) {
             throw new DeleteAllNotAllowedException(ErrorMessages.DELETE_ALL_NOT_ALLOWED);

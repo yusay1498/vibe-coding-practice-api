@@ -26,6 +26,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/users").hasRole("ADMIN")
                 .anyRequest().permitAll()
             )
+            // 未認証アクセス時に401を返すためBasic認証を有効化
+            .httpBasic(httpBasic -> {})
             // 開発・検証用にCSRF保護を無効化
             // 本番環境では必ず有効化すること
             .csrf(csrf -> csrf.disable());
