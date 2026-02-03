@@ -35,12 +35,12 @@ public class UserService {
     public User create(String username, String email, String passwordHash) {
         // メールアドレスの重複チェック
         if (userRepository.findByEmail(email).isPresent()) {
-            throw new DuplicateUserException(email);
+            throw new DuplicateUserException("メールアドレス");
         }
         
         // ユーザー名の重複チェック
         if (userRepository.findByUsername(username).isPresent()) {
-            throw new DuplicateUserException(username);
+            throw new DuplicateUserException("ユーザー名");
         }
         
         // ドメインサービスを使用してユーザーを作成
@@ -63,10 +63,10 @@ public class UserService {
             // 同時リクエストにより重複チェック後にデータが挿入された場合
             // データベースのUNIQUE制約により例外が発生するため、適切な例外に変換
             if (userRepository.findByEmail(email).isPresent()) {
-                throw new DuplicateUserException(email);
+                throw new DuplicateUserException("メールアドレス");
             }
             if (userRepository.findByUsername(username).isPresent()) {
-                throw new DuplicateUserException(username);
+                throw new DuplicateUserException("ユーザー名");
             }
             // 他のデータ整合性エラーの場合は元の例外を再スロー
             throw e;

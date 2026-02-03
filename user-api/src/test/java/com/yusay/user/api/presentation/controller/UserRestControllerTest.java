@@ -232,6 +232,8 @@ class UserRestControllerTest {
 
         assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Duplicate user");
         assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(409);
+        assertResult.bodyJson().extractingPath("$.detail").asString().isEqualTo("指定されたメールアドレスは既に使用されています");
+        assertResult.bodyJson().extractingPath("$.field").asString().isEqualTo("メールアドレス");
     }
 
     @Test
@@ -262,6 +264,8 @@ class UserRestControllerTest {
 
         assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Duplicate user");
         assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(409);
+        assertResult.bodyJson().extractingPath("$.detail").asString().isEqualTo("指定されたユーザー名は既に使用されています");
+        assertResult.bodyJson().extractingPath("$.field").asString().isEqualTo("ユーザー名");
     }
 
     @Test

@@ -27,10 +27,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DuplicateUserException.class)
     public ResponseEntity<ProblemDetail> handleDuplicateUser(DuplicateUserException ex, WebRequest request) {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        // セキュリティ: 具体的な値を公開せず、フィールド名のみを示す
+        String detail = "指定された" + ex.getFieldName() + "は既に使用されています";
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, detail);
         problemDetail.setTitle("Duplicate user");
         problemDetail.setProperty("timestamp", OffsetDateTime.now());
         problemDetail.setProperty("path", request.getDescription(false).replace("uri=", ""));
+        problemDetail.setProperty("field", ex.getFieldName());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
     }
 
