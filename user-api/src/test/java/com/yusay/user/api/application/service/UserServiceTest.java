@@ -126,7 +126,7 @@ class UserServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> userService.create(username, email, passwordHash))
                 .isInstanceOf(DuplicateUserException.class)
-                .hasMessage("ユーザーが既に存在します: " + email);
+                .hasMessage("ユーザーが既に存在します");
         
         verify(userRepository).findByEmail(email);
         verify(userRepository, never()).findByUsername(anyString());
@@ -166,7 +166,7 @@ class UserServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> userService.create(username, email, passwordHash))
                 .isInstanceOf(DuplicateUserException.class)
-                .hasMessage("ユーザーが既に存在します: " + username);
+                .hasMessage("ユーザーが既に存在します");
         
         verify(userRepository).findByEmail(email);
         verify(userRepository).findByUsername(username);
@@ -228,7 +228,7 @@ class UserServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> userService.create(username, email, passwordHash))
                 .isInstanceOf(DuplicateUserException.class)
-                .hasMessage("ユーザーが既に存在します: " + email);
+                .hasMessage("ユーザーが既に存在します");
         
         verify(userRepository).save(newUser);
     }
