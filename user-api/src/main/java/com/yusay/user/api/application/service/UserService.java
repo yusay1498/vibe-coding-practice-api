@@ -88,4 +88,13 @@ public class UserService {
             throw new UserNotFoundException(id);
         }
     }
+
+    /**
+     * 全ユーザーを削除する
+     * 
+     * @return 削除されたユーザー数
+     */
+    public int deleteAll() {
+        return userRepository.deleteAll();
+    }
 }
