@@ -780,7 +780,7 @@ class UserServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> userService.update(userId, null, conflictingEmail, null, null, null, null, null))
                 .isInstanceOf(DuplicateUserException.class)
-                .hasMessage("ユーザーが既に存在します: " + conflictingEmail);
+                .hasMessage("ユーザーが既に存在します");
         
         verify(userRepository).findById(userId);
         verify(userRepository).findByEmail(conflictingEmail);
@@ -832,7 +832,7 @@ class UserServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> userService.update(userId, conflictingUsername, null, null, null, null, null, null))
                 .isInstanceOf(DuplicateUserException.class)
-                .hasMessage("ユーザーが既に存在します: " + conflictingUsername);
+                .hasMessage("ユーザーが既に存在します");
         
         verify(userRepository).findById(userId);
         verify(userRepository).findByUsername(conflictingUsername);
@@ -979,7 +979,7 @@ class UserServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> userService.update(userId, null, newEmail, null, null, null, null, null))
                 .isInstanceOf(DuplicateUserException.class)
-                .hasMessage("ユーザーが既に存在します: " + newEmail);
+                .hasMessage("ユーザーが既に存在します");
         
         verify(userRepository).save(updatedUser);
     }
@@ -1051,7 +1051,7 @@ class UserServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> userService.update(userId, newUsername, null, null, null, null, null, null))
                 .isInstanceOf(DuplicateUserException.class)
-                .hasMessage("ユーザーが既に存在します: " + newUsername);
+                .hasMessage("ユーザーが既に存在します");
         
         verify(userRepository).save(updatedUser);
     }
