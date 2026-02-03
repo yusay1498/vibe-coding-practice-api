@@ -4,6 +4,7 @@ import com.yusay.user.api.application.dto.DeleteAllResult;
 import com.yusay.user.api.application.service.UserService;
 import com.yusay.user.api.domain.entity.User;
 import com.yusay.user.api.domain.exception.DeleteAllNotAllowedException;
+import com.yusay.user.api.presentation.constant.ErrorMessages;
 import com.yusay.user.api.presentation.dto.CreateUserRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +28,6 @@ public class UserRestController {
     
     private static final String CONFIRM_DELETE_ALL_HEADER = "X-Confirm-Delete-All";
     private static final String CONFIRM_VALUE = "true";
-    private static final String DELETE_ALL_NOT_ALLOWED_MESSAGE = "全件削除は現在の環境またはデータ状態では実行できません";
     
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
@@ -82,7 +82,7 @@ public class UserRestController {
             @RequestHeader(value = CONFIRM_DELETE_ALL_HEADER, required = false) String confirmHeader) {
         // 破壊的操作のため、確認ヘッダーを要求
         if (confirmHeader == null || !CONFIRM_VALUE.equalsIgnoreCase(confirmHeader)) {
-            throw new DeleteAllNotAllowedException(DELETE_ALL_NOT_ALLOWED_MESSAGE);
+            throw new DeleteAllNotAllowedException(ErrorMessages.DELETE_ALL_NOT_ALLOWED);
         }
         
         DeleteAllResult result = userService.deleteAll();

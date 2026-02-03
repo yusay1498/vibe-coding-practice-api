@@ -3,6 +3,7 @@ package com.yusay.user.api.presentation.advice;
 import com.yusay.user.api.domain.exception.DeleteAllNotAllowedException;
 import com.yusay.user.api.domain.exception.DuplicateUserException;
 import com.yusay.user.api.domain.exception.UserNotFoundException;
+import com.yusay.user.api.presentation.constant.ErrorMessages;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -16,8 +17,6 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-    private static final String DELETE_ALL_NOT_ALLOWED_MESSAGE = "全件削除は現在の環境またはデータ状態では実行できません";
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ProblemDetail> handleUserNotFound(UserNotFoundException ex, WebRequest request) {
@@ -58,7 +57,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DeleteAllNotAllowedException.class)
     public ResponseEntity<ProblemDetail> handleDeleteAllNotAllowed(DeleteAllNotAllowedException ex, WebRequest request) {
         // セキュリティ: 内部情報（削除上限値等）を公開せず、汎用的なメッセージを返す
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, DELETE_ALL_NOT_ALLOWED_MESSAGE);
+        // 例外メッセージの詳細はログに記録されるが、クライアントには安全なメッセージのみを返す
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ErrorMessages.DELETE_ALL_NOT_ALLOWED);
         problemDetail.setTitle("Delete all not allowed");
         problemDetail.setProperty("timestamp", OffsetDateTime.now());
         problemDetail.setProperty("path", request.getDescription(false).replace("uri=", ""));
