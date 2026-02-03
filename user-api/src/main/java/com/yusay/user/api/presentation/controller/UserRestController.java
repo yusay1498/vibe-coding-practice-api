@@ -3,6 +3,7 @@ package com.yusay.user.api.presentation.controller;
 import com.yusay.user.api.application.dto.DeleteAllResult;
 import com.yusay.user.api.application.service.UserService;
 import com.yusay.user.api.domain.entity.User;
+import com.yusay.user.api.domain.exception.DeleteAllNotAllowedException;
 import com.yusay.user.api.presentation.dto.CreateUserRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -72,7 +74,14 @@ public class UserRestController {
     }
 
     @DeleteMapping
-    public ResponseEntity<DeleteAllResult> deleteAllUsers() {
+    public ResponseEntity<DeleteAllResult> deleteAllUsers(
+            @RequestHeader(value = "X-Confirm-Delete-All", required = false) String confirmHeader) {
+        // 破壊的操作のため、確認ヘッダーを要求
+        if (confirmHeader == null || !confirmHeader.equals("true")) {
+            throw new DeleteAllNotAllowedException(
+                "全件削除には X-Confirm-Delete-All: true ヘッダーが必要です");
+        }
+        
         DeleteAllResult result = userService.deleteAll();
         return ResponseEntity.ok(result);
     }

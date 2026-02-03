@@ -441,7 +441,9 @@ class UserRestControllerTest {
             """
     })
     void testDeleteAllUsers_Success() throws Exception {
-        var assertResult = assertThat(mockMvcTester.delete().uri("/users"))
+        var assertResult = assertThat(mockMvcTester.delete()
+                .uri("/users")
+                .header("X-Confirm-Delete-All", "true"))
                 .hasStatusOk()
                 .hasContentType(MediaType.APPLICATION_JSON);
 
@@ -462,11 +464,55 @@ class UserRestControllerTest {
     @DisplayName("ユーザーが存在しない場合でも全件削除が成功すること")
     @Sql(statements = "DELETE FROM users;")
     void testDeleteAllUsers_EmptyDatabase() throws Exception {
-        var assertResult = assertThat(mockMvcTester.delete().uri("/users"))
+        var assertResult = assertThat(mockMvcTester.delete()
+                .uri("/users")
+                .header("X-Confirm-Delete-All", "true"))
                 .hasStatusOk()
                 .hasContentType(MediaType.APPLICATION_JSON);
 
         assertResult.bodyJson().extractingPath("$.deletedCount").asNumber().isEqualTo(0);
         assertResult.bodyJson().extractingPath("$.environment").asString().isNotBlank();
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("確認ヘッダーなしで全件削除を試行すると403エラーが返されること")
+    @Sql(statements = {
+            """
+            DELETE FROM users;
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES ('750e8400-e29b-41d4-a716-446655440001', 'user1', 'user1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true);
+            """
+    })
+    void testDeleteAllUsers_WithoutConfirmationHeader() throws Exception {
+        var assertResult = assertThat(mockMvcTester.delete().uri("/users"))
+                .hasStatus(403)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+        assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Delete all not allowed");
+        assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(403);
+        assertResult.bodyJson().extractingPath("$.detail").asString().isEqualTo("全件削除は現在の環境またはデータ状態では実行できません");
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("確認ヘッダーの値が不正な場合に403エラーが返されること")
+    @Sql(statements = {
+            """
+            DELETE FROM users;
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES ('750e8400-e29b-41d4-a716-446655440001', 'user1', 'user1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true);
+            """
+    })
+    void testDeleteAllUsers_WithInvalidConfirmationHeader() throws Exception {
+        var assertResult = assertThat(mockMvcTester.delete()
+                .uri("/users")
+                .header("X-Confirm-Delete-All", "false"))
+                .hasStatus(403)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+        assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Delete all not allowed");
+        assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(403);
+        assertResult.bodyJson().extractingPath("$.detail").asString().isEqualTo("全件削除は現在の環境またはデータ状態では実行できません");
     }
 }

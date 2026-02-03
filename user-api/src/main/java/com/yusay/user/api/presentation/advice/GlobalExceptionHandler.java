@@ -55,7 +55,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DeleteAllNotAllowedException.class)
     public ResponseEntity<ProblemDetail> handleDeleteAllNotAllowed(DeleteAllNotAllowedException ex, WebRequest request) {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        // セキュリティ: 内部情報（削除上限値等）を公開せず、汎用的なメッセージを返す
+        String detail = "全件削除は現在の環境またはデータ状態では実行できません";
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, detail);
         problemDetail.setTitle("Delete all not allowed");
         problemDetail.setProperty("timestamp", OffsetDateTime.now());
         problemDetail.setProperty("path", request.getDescription(false).replace("uri=", ""));
