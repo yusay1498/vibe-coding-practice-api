@@ -353,4 +353,73 @@ class UserRestControllerTest {
         assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Validation error");
         assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(400);
     }
+
+    @Test
+    @WithMockUser
+    @DisplayName("ユーザー名が長すぎる場合は400エラーが返されること")
+    void testCreateUser_UsernameTooLong() throws Exception {
+        String requestBody = """
+                {
+                    "username": "%s",
+                    "email": "newuser@example.com",
+                    "password": "password123"
+                }
+                """.formatted("a".repeat(51));
+        
+        var assertResult = assertThat(mockMvcTester.post()
+                .uri("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .hasStatus(400)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+        assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Validation error");
+        assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(400);
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("メールアドレスが長すぎる場合は400エラーが返されること")
+    void testCreateUser_EmailTooLong() throws Exception {
+        String requestBody = """
+                {
+                    "username": "newuser",
+                    "email": "%s",
+                    "password": "password123"
+                }
+                """.formatted("a".repeat(90) + "@example.com");
+        
+        var assertResult = assertThat(mockMvcTester.post()
+                .uri("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .hasStatus(400)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+        assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Validation error");
+        assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(400);
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("パスワードが長すぎる場合は400エラーが返されること")
+    void testCreateUser_PasswordTooLong() throws Exception {
+        String requestBody = """
+                {
+                    "username": "newuser",
+                    "email": "newuser@example.com",
+                    "password": "%s"
+                }
+                """.formatted("a".repeat(101));
+        
+        var assertResult = assertThat(mockMvcTester.post()
+                .uri("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .hasStatus(400)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+        assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Validation error");
+        assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(400);
+    }
 }
