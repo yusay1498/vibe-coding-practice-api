@@ -25,6 +25,9 @@ import java.util.List;
 @RequestMapping("/users")
 public class UserRestController {
     
+    private static final String CONFIRM_DELETE_ALL_HEADER = "X-Confirm-Delete-All";
+    private static final String CONFIRM_VALUE = "true";
+    
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
 
@@ -75,11 +78,11 @@ public class UserRestController {
 
     @DeleteMapping
     public ResponseEntity<DeleteAllResult> deleteAllUsers(
-            @RequestHeader(value = "X-Confirm-Delete-All", required = false) String confirmHeader) {
+            @RequestHeader(value = CONFIRM_DELETE_ALL_HEADER, required = false) String confirmHeader) {
         // 破壊的操作のため、確認ヘッダーを要求
-        if (confirmHeader == null || !confirmHeader.equals("true")) {
+        if (confirmHeader == null || !CONFIRM_VALUE.equalsIgnoreCase(confirmHeader)) {
             throw new DeleteAllNotAllowedException(
-                "全件削除には X-Confirm-Delete-All: true ヘッダーが必要です");
+                "全件削除は現在の環境またはデータ状態では実行できません");
         }
         
         DeleteAllResult result = userService.deleteAll();

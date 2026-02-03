@@ -515,4 +515,24 @@ class UserRestControllerTest {
         assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(403);
         assertResult.bodyJson().extractingPath("$.detail").asString().isEqualTo("全件削除は現在の環境またはデータ状態では実行できません");
     }
+
+    @Test
+    @WithMockUser
+    @DisplayName("確認ヘッダーの値が大文字でも削除できること（大文字小文字を区別しない）")
+    @Sql(statements = {
+            """
+            DELETE FROM users;
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES ('750e8400-e29b-41d4-a716-446655440001', 'user1', 'user1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true);
+            """
+    })
+    void testDeleteAllUsers_WithUppercaseConfirmationHeader() throws Exception {
+        var assertResult = assertThat(mockMvcTester.delete()
+                .uri("/users")
+                .header("X-Confirm-Delete-All", "TRUE"))
+                .hasStatusOk()
+                .hasContentType(MediaType.APPLICATION_JSON);
+
+        assertResult.bodyJson().extractingPath("$.deletedCount").asNumber().isEqualTo(1);
+    }
 }
