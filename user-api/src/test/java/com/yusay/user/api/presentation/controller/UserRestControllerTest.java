@@ -812,6 +812,125 @@ class UserRestControllerTest {
         assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(400);
     }
 
+    @Test
+    @WithMockUser
+    @DisplayName("更新時にユーザー名が長すぎる場合は400エラーが返されること")
+    @Sql(statements = {
+            """
+            DELETE FROM users;
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES ('850e8400-e29b-41d4-a716-446655440010', 'testuser', 'test@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)
+            ON CONFLICT DO NOTHING;
+            """
+    })
+    void testUpdateUser_UsernameTooLong() throws Exception {
+        String userId = "850e8400-e29b-41d4-a716-446655440010";
+        String requestBody = """
+                {
+                    "username": "%s"
+                }
+                """.formatted("a".repeat(51));
+        
+        var assertResult = assertThat(mockMvcTester.put()
+                .uri("/users/{id}", userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .hasStatus(400)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+        assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Validation error");
+        assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(400);
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("更新時にメールアドレスが長すぎる場合は400エラーが返されること")
+    @Sql(statements = {
+            """
+            DELETE FROM users;
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES ('850e8400-e29b-41d4-a716-446655440011', 'testuser', 'test@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)
+            ON CONFLICT DO NOTHING;
+            """
+    })
+    void testUpdateUser_EmailTooLong() throws Exception {
+        String userId = "850e8400-e29b-41d4-a716-446655440011";
+        String requestBody = """
+                {
+                    "email": "%s"
+                }
+                """.formatted("a".repeat(90) + "@example.com");
+        
+        var assertResult = assertThat(mockMvcTester.put()
+                .uri("/users/{id}", userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .hasStatus(400)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+        assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Validation error");
+        assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(400);
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("更新時にパスワードが長すぎる場合は400エラーが返されること")
+    @Sql(statements = {
+            """
+            DELETE FROM users;
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES ('850e8400-e29b-41d4-a716-446655440012', 'testuser', 'test@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)
+            ON CONFLICT DO NOTHING;
+            """
+    })
+    void testUpdateUser_PasswordTooLong() throws Exception {
+        String userId = "850e8400-e29b-41d4-a716-446655440012";
+        String requestBody = """
+                {
+                    "password": "%s"
+                }
+                """.formatted("a".repeat(101));
+        
+        var assertResult = assertThat(mockMvcTester.put()
+                .uri("/users/{id}", userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .hasStatus(400)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+
+        assertResult.bodyJson().extractingPath("$.title").asString().isEqualTo("Validation error");
+        assertResult.bodyJson().extractingPath("$.status").asNumber().isEqualTo(400);
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("空のリクエストボディで更新すると既存の値が保持されること")
+    @Sql(statements = {
+            """
+            DELETE FROM users;
+            INSERT INTO users (id, username, email, password_hash, enabled)
+            VALUES ('850e8400-e29b-41d4-a716-446655440013', 'originaluser', 'original@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)
+            ON CONFLICT DO NOTHING;
+            """
+    })
+    void testUpdateUser_EmptyRequestBody() throws Exception {
+        String userId = "850e8400-e29b-41d4-a716-446655440013";
+        String requestBody = "{}";
+        
+        var assertResult = assertThat(mockMvcTester.put()
+                .uri("/users/{id}", userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
+                .hasStatusOk()
+                .hasContentType(MediaType.APPLICATION_JSON);
+
+        assertResult.bodyJson().extractingPath("$.id").asString().isEqualTo(userId);
+        // 既存の値が保持されていることを確認
+        assertResult.bodyJson().extractingPath("$.username").asString().isEqualTo("originaluser");
+        assertResult.bodyJson().extractingPath("$.email").asString().isEqualTo("original@example.com");
+        assertResult.bodyJson().extractingPath("$.enabled").asBoolean().isTrue();
+    }
+
     // 注意: 内部詳細マスキングの検証について
     // GlobalExceptionHandlerは常にErrorMessages.DELETE_ALL_NOT_ALLOWEDを返すため、
     // UserServiceがどのような詳細メッセージを例外に含めても、
