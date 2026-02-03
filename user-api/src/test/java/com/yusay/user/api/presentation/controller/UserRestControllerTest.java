@@ -193,7 +193,7 @@ class UserRestControllerTest {
         assertResult.bodyJson().extractingPath("$.enabled").asBoolean().isTrue();
         
         // IDが生成されていることを確認
-        String userId = assertResult.bodyJson().extractingPath("$.id").asString().asString();
+        String userId = assertResult.bodyJson().extractingPath("$.id").asString();
         assertThat(userId).isNotBlank();
         
         // Locationヘッダーが設定されていることを確認
