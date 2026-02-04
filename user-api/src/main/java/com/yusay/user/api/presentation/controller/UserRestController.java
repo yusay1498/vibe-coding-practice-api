@@ -7,6 +7,7 @@ import com.yusay.user.api.domain.exception.DeleteAllNotAllowedException;
 import com.yusay.user.api.presentation.constant.ErrorMessages;
 import com.yusay.user.api.presentation.constant.HttpHeaders;
 import com.yusay.user.api.presentation.dto.CreateUserRequest;
+import com.yusay.user.api.presentation.dto.UpdateUserRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -69,6 +71,29 @@ public class UserRestController {
     public ResponseEntity<User> getUser(@PathVariable String id) {
         User user = userService.lookup(id);
         return ResponseEntity.ok(user);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable String id, @Valid @RequestBody UpdateUserRequest request) {
+        // パスワードが指定されている場合はハッシュ化
+        String passwordHash = null;
+        if (request.password() != null) {
+            passwordHash = passwordEncoder.encode(request.password());
+        }
+        
+        // ユーザーを更新
+        User updatedUser = userService.update(
+                id,
+                request.username(),
+                request.email(),
+                passwordHash,
+                request.enabled(),
+                request.accountNonExpired(),
+                request.accountNonLocked(),
+                request.credentialsNonExpired()
+        );
+        
+        return ResponseEntity.ok(updatedUser);
     }
 
     @DeleteMapping("/{id}")
