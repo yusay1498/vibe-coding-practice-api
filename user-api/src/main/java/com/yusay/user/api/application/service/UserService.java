@@ -57,15 +57,9 @@ public class UserService {
      * @throws DuplicateUserException メールアドレスまたはユーザー名が既に存在する場合
      */
     public User create(String username, String email, String passwordHash) {
-        // メールアドレスの重複チェック
-        if (userRepository.findByEmail(email).isPresent()) {
-            throw new DuplicateUserException("メールアドレス");
-        }
-        
-        // ユーザー名の重複チェック
-        if (userRepository.findByUsername(username).isPresent()) {
-            throw new DuplicateUserException("ユーザー名");
-        }
+        // メールアドレスとユーザー名の重複チェック
+        checkDuplicateEmail(email, null);
+        checkDuplicateUsername(username, null);
         
         // ドメインサービスを使用してユーザーを作成
         User newUser = userDomainService.createUser(
@@ -86,12 +80,7 @@ public class UserService {
         } catch (DataIntegrityViolationException e) {
             // 同時リクエストにより重複チェック後にデータが挿入された場合
             // データベースのUNIQUE制約により例外が発生するため、適切な例外に変換
-            if (userRepository.findByEmail(email).isPresent()) {
-                throw new DuplicateUserException("メールアドレス");
-            }
-            if (userRepository.findByUsername(username).isPresent()) {
-                throw new DuplicateUserException("ユーザー名");
-            }
+            handleDataIntegrityViolation(email, username, null);
             // 他のデータ整合性エラーの場合は元の例外を再スロー
             throw e;
         }
@@ -135,28 +124,12 @@ public class UserService {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
         
-        // メールアドレスの重複チェック（変更される場合のみ）
+        // メールアドレスとユーザー名の重複チェック（変更される場合のみ）
         if (email != null && !email.equals(existingUser.email())) {
-            Optional<User> userWithEmail = userRepository.findByEmail(email);
-            if (userWithEmail.isPresent()) {
-                User foundUser = userWithEmail.get();
-                if (!foundUser.id().equals(id)) {
-                    // 自分自身以外のユーザーがそのメールアドレスを使用している場合は例外
-                    throw new DuplicateUserException("メールアドレス");
-                }
-            }
+            checkDuplicateEmail(email, id);
         }
-        
-        // ユーザー名の重複チェック（変更される場合のみ）
         if (username != null && !username.equals(existingUser.username())) {
-            Optional<User> userWithUsername = userRepository.findByUsername(username);
-            if (userWithUsername.isPresent()) {
-                User foundUser = userWithUsername.get();
-                if (!foundUser.id().equals(id)) {
-                    // 自分自身以外のユーザーがそのユーザー名を使用している場合は例外
-                    throw new DuplicateUserException("ユーザー名");
-                }
-            }
+            checkDuplicateUsername(username, id);
         }
         
         // ドメインサービスを使用してユーザーを更新
@@ -178,24 +151,7 @@ public class UserService {
         } catch (DataIntegrityViolationException e) {
             // 同時リクエストにより重複チェック後にデータが変更された場合
             // データベースのUNIQUE制約により例外が発生するため、適切な例外に変換
-            if (email != null) {
-                Optional<User> userWithEmail = userRepository.findByEmail(email);
-                if (userWithEmail.isPresent()) {
-                    User foundUser = userWithEmail.get();
-                    if (!foundUser.id().equals(id)) {
-                        throw new DuplicateUserException("メールアドレス");
-                    }
-                }
-            }
-            if (username != null) {
-                Optional<User> userWithUsername = userRepository.findByUsername(username);
-                if (userWithUsername.isPresent()) {
-                    User foundUser = userWithUsername.get();
-                    if (!foundUser.id().equals(id)) {
-                        throw new DuplicateUserException("ユーザー名");
-                    }
-                }
-            }
+            handleDataIntegrityViolation(email, username, id);
             // 他のデータ整合性エラーの場合は元の例外を再スロー
             throw e;
         }
@@ -290,5 +246,71 @@ public class UserService {
         }
 
         return false;
+    }
+    
+    /**
+     * メールアドレスの重複をチェックする
+     * 
+     * @param email チェック対象のメールアドレス
+     * @param excludeUserId 除外するユーザーID（更新時に自分自身を除外するため、nullの場合は除外なし）
+     * @throws DuplicateUserException メールアドレスが既に使用されている場合
+     */
+    private void checkDuplicateEmail(String email, String excludeUserId) {
+        Optional<User> userWithEmail = userRepository.findByEmail(email);
+        if (userWithEmail.isPresent()) {
+            User foundUser = userWithEmail.get();
+            // 除外IDが指定されていない、または除外ID以外のユーザーが見つかった場合は重複
+            if (excludeUserId == null || !foundUser.id().equals(excludeUserId)) {
+                throw new DuplicateUserException("メールアドレス");
+            }
+        }
+    }
+    
+    /**
+     * ユーザー名の重複をチェックする
+     * 
+     * @param username チェック対象のユーザー名
+     * @param excludeUserId 除外するユーザーID（更新時に自分自身を除外するため、nullの場合は除外なし）
+     * @throws DuplicateUserException ユーザー名が既に使用されている場合
+     */
+    private void checkDuplicateUsername(String username, String excludeUserId) {
+        Optional<User> userWithUsername = userRepository.findByUsername(username);
+        if (userWithUsername.isPresent()) {
+            User foundUser = userWithUsername.get();
+            // 除外IDが指定されていない、または除外ID以外のユーザーが見つかった場合は重複
+            if (excludeUserId == null || !foundUser.id().equals(excludeUserId)) {
+                throw new DuplicateUserException("ユーザー名");
+            }
+        }
+    }
+    
+    /**
+     * データ整合性違反例外を処理する
+     * UNIQUE制約違反の原因を特定し、適切な例外に変換する
+     * 
+     * @param email チェック対象のメールアドレス（nullの場合はチェックしない）
+     * @param username チェック対象のユーザー名（nullの場合はチェックしない）
+     * @param excludeUserId 除外するユーザーID（更新時に自分自身を除外するため、nullの場合は除外なし）
+     * @throws DuplicateUserException メールアドレスまたはユーザー名が重複している場合
+     */
+    private void handleDataIntegrityViolation(String email, String username, String excludeUserId) {
+        if (email != null) {
+            Optional<User> userWithEmail = userRepository.findByEmail(email);
+            if (userWithEmail.isPresent()) {
+                User foundUser = userWithEmail.get();
+                if (excludeUserId == null || !foundUser.id().equals(excludeUserId)) {
+                    throw new DuplicateUserException("メールアドレス");
+                }
+            }
+        }
+        if (username != null) {
+            Optional<User> userWithUsername = userRepository.findByUsername(username);
+            if (userWithUsername.isPresent()) {
+                User foundUser = userWithUsername.get();
+                if (excludeUserId == null || !foundUser.id().equals(excludeUserId)) {
+                    throw new DuplicateUserException("ユーザー名");
+                }
+            }
+        }
     }
 }
