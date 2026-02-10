@@ -14,6 +14,8 @@ import java.util.List;
 @Service
 public class UserDomainService {
 
+    private static final String EMAIL_PATTERN = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+
     private final Clock clock;
 
     public UserDomainService(Clock clock) {
@@ -174,7 +176,7 @@ public class UserDomainService {
             throw new IllegalArgumentException("メールアドレスは100文字以内で入力してください");
         }
         // 基本的なメールアドレス形式チェック
-        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+        if (!email.matches(EMAIL_PATTERN)) {
             throw new IllegalArgumentException("有効なメールアドレスを入力してください");
         }
     }
