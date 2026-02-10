@@ -78,13 +78,22 @@ Good examples:
 
 - **NEVER** downgrade the Java version configured in pom.xml files under ANY circumstances
 - **NEVER** change Java version to match the build environment
-- **NEVER** modify `<java.version>` tag in pom.xml files
-- Current project uses **Java 25** - this MUST be maintained at all times
+- **NEVER** modify any of these Java version properties:
+  - `<java.version>` in user-api/pom.xml
+  - `<maven.compiler.source>` in root pom.xml
+  - `<maven.compiler.target>` in root pom.xml
+  - `<maven.compiler.release>` if present
+  - `java-version` in GitHub Actions workflows (.github/workflows/*.yml)
+- Current project uses **Java 25** - this MUST be maintained at all times in ALL configuration files
 - If the build environment has a different Java version (e.g., Java 17), this is an **environment issue**, NOT a code issue
 - If compilation fails due to Java version mismatch:
-  - Do NOT change the Java version in pom.xml
+  - Do NOT change the Java version in any pom.xml or workflow file
   - Document that the build environment needs to be updated
-  - Skip build/test steps if necessary, but NEVER change the version
+  - You may skip build/test steps **locally** for development work, but:
+    - This is ONLY acceptable for local development environments
+    - GitHub Actions CI MUST still pass with Java 25
+    - Final PR MUST have all tests passing in CI with Java 25
+  - NEVER change the version to "fix" the build
 
 **Why this matters:**
 - Java 25 is intentionally chosen for this project to use cutting-edge features
