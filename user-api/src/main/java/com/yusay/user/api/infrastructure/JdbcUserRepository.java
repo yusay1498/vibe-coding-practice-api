@@ -19,15 +19,15 @@ public class JdbcUserRepository implements UserRepository {
                created_at, updated_at
         """;
     
-    private static final String FROM_USERS = "FROM users";
+    private static final String FROM_USERS = "\nFROM users";
     
     private static final String SQL_FIND_ALL = SELECT_ALL_COLUMNS + FROM_USERS;
     
-    private static final String SQL_FIND_BY_ID = SELECT_ALL_COLUMNS + FROM_USERS + " WHERE id = :id";
+    private static final String SQL_FIND_BY_ID = SELECT_ALL_COLUMNS + FROM_USERS + "\nWHERE id = :id";
     
-    private static final String SQL_FIND_BY_EMAIL = SELECT_ALL_COLUMNS + FROM_USERS + " WHERE email = :email";
+    private static final String SQL_FIND_BY_EMAIL = SELECT_ALL_COLUMNS + FROM_USERS + "\nWHERE email = :email";
     
-    private static final String SQL_FIND_BY_USERNAME = SELECT_ALL_COLUMNS + FROM_USERS + " WHERE username = :username";
+    private static final String SQL_FIND_BY_USERNAME = SELECT_ALL_COLUMNS + FROM_USERS + "\nWHERE username = :username";
     
     private static final String SQL_UPDATE = """
         UPDATE users
