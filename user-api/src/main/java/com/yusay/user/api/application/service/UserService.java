@@ -240,7 +240,7 @@ public class UserService {
             throw e;
         }
         
-        // 検証成功後の監査ログ
+        // 検証成功後の監査ログ（重要な操作のため警告レベル）
         logger.warn("全件削除を開始します。対象ユーザー数: {}, 環境: {}", 
             usersToDelete.size(), activeProfile);
         
@@ -254,6 +254,7 @@ public class UserService {
         // 通常の競合状態では、事前検証で上限以下と判定されたデータが削除されるため、
         // この検証で上限を超えることはほぼありませんが、安全性のために実装しています。
         if (deletedCount > maxAllowedDeletions) {
+            // セキュリティ重大インシデント: 予期しない大量削除が発生
             logger.error("全件削除で削除件数が上限を超えました。削除件数: {}, 上限: {}, 環境: {}",
                 deletedCount, maxAllowedDeletions, activeProfile);
             // @Transactional により、この例外で deleteAll の削除はロールバックされる
@@ -262,7 +263,7 @@ public class UserService {
                     deletedCount, maxAllowedDeletions));
         }
         
-        // 削除後の監査ログ
+        // 削除後の監査ログ（重要な操作のため警告レベル）
         logger.warn("全件削除が完了しました。削除件数: {}, 実行日時: {}, 環境: {}", 
             deletedCount, executedAt, activeProfile);
         

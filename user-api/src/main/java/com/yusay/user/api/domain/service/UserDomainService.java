@@ -22,6 +22,7 @@ public class UserDomainService {
 
     /**
      * 新規ユーザーを作成する際に作成日時を自動的に設定する
+     * ドメインルール: 入力値の妥当性を検証する
      * 
      * @param id ユーザーID（nullの場合はリポジトリ層で生成される）
      * @param username ユーザー名
@@ -32,6 +33,7 @@ public class UserDomainService {
      * @param accountNonLocked アカウントロックフラグ
      * @param credentialsNonExpired 認証情報有効期限切れフラグ
      * @return 作成日時と更新日時が設定された新規Userインスタンス
+     * @throws IllegalArgumentException 入力値が不正な場合
      */
     public User createUser(
             String id,
@@ -43,6 +45,12 @@ public class UserDomainService {
             Boolean accountNonLocked,
             Boolean credentialsNonExpired
     ) {
+        // ドメインルール: 入力値のバリデーション
+        validateUsername(username);
+        validateEmail(email);
+        validatePasswordHash(passwordHash);
+        validateBooleanFields(enabled, accountNonExpired, accountNonLocked, credentialsNonExpired);
+        
         LocalDateTime now = LocalDateTime.now(clock);
         return new User(
                 id,
@@ -130,5 +138,83 @@ public class UserDomainService {
      */
     public LocalDateTime getCurrentTime() {
         return LocalDateTime.now(clock);
+    }
+    
+    /**
+     * ユーザー名のバリデーション
+     * ドメインルール: ユーザー名は3文字以上50文字以内
+     * 
+     * @param username ユーザー名
+     * @throws IllegalArgumentException ユーザー名が不正な場合
+     */
+    private void validateUsername(String username) {
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("ユーザー名は必須です");
+        }
+        if (username.length() < 3) {
+            throw new IllegalArgumentException("ユーザー名は3文字以上で入力してください");
+        }
+        if (username.length() > 50) {
+            throw new IllegalArgumentException("ユーザー名は50文字以内で入力してください");
+        }
+    }
+    
+    /**
+     * メールアドレスのバリデーション
+     * ドメインルール: 有効な形式のメールアドレス、100文字以内
+     * 
+     * @param email メールアドレス
+     * @throws IllegalArgumentException メールアドレスが不正な場合
+     */
+    private void validateEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("メールアドレスは必須です");
+        }
+        if (email.length() > 100) {
+            throw new IllegalArgumentException("メールアドレスは100文字以内で入力してください");
+        }
+        // 基本的なメールアドレス形式チェック
+        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            throw new IllegalArgumentException("有効なメールアドレスを入力してください");
+        }
+    }
+    
+    /**
+     * パスワードハッシュのバリデーション
+     * ドメインルール: パスワードハッシュは必須
+     * 
+     * @param passwordHash パスワードハッシュ
+     * @throws IllegalArgumentException パスワードハッシュが不正な場合
+     */
+    private void validatePasswordHash(String passwordHash) {
+        if (passwordHash == null || passwordHash.isBlank()) {
+            throw new IllegalArgumentException("パスワードハッシュは必須です");
+        }
+    }
+    
+    /**
+     * Boolean型フィールドのバリデーション
+     * ドメインルール: すべてのBoolean型フィールドは必須
+     * 
+     * @param enabled 有効フラグ
+     * @param accountNonExpired アカウント有効期限切れフラグ
+     * @param accountNonLocked アカウントロックフラグ
+     * @param credentialsNonExpired 認証情報有効期限切れフラグ
+     * @throws IllegalArgumentException いずれかのフィールドがnullの場合
+     */
+    private void validateBooleanFields(Boolean enabled, Boolean accountNonExpired, 
+                                      Boolean accountNonLocked, Boolean credentialsNonExpired) {
+        if (enabled == null) {
+            throw new IllegalArgumentException("有効フラグは必須です");
+        }
+        if (accountNonExpired == null) {
+            throw new IllegalArgumentException("アカウント有効期限切れフラグは必須です");
+        }
+        if (accountNonLocked == null) {
+            throw new IllegalArgumentException("アカウントロックフラグは必須です");
+        }
+        if (credentialsNonExpired == null) {
+            throw new IllegalArgumentException("認証情報有効期限切れフラグは必須です");
+        }
     }
 }
