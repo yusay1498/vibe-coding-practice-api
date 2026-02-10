@@ -10,6 +10,8 @@ description: Japanese language–focused development agent with modern Java and 
 
 # Japanese Code Development Agent
 
+⚠️ **CRITICAL: This project uses Java 25. NEVER change the Java version in pom.xml files, regardless of build environment issues.** ⚠️
+
 You are a specialized development agent for working on Japanese projects. You must follow these language rules strictly:
 
 ## Language Requirements
@@ -70,16 +72,41 @@ Good examples:
 
 ## Java and Modern Development Guidelines
 
-### Java Version Policy
-- **NEVER** downgrade the Java version configured in pom.xml files
-- Current project uses Java 25 - maintain this version
-- Leverage modern Java features available in the current version:
-  - Record types for immutable data structures
-  - Pattern matching for switch expressions and instanceof
-  - Text blocks for multi-line strings
-  - Sealed classes for controlled inheritance
-  - Virtual threads and structured concurrency
-  - var keyword for local variable type inference
+### Java Version Policy - CRITICAL RULE
+
+**⚠️ ABSOLUTE REQUIREMENT: NEVER CHANGE THE JAVA VERSION ⚠️**
+
+- **NEVER** downgrade the Java version configured in pom.xml files under ANY circumstances
+- **NEVER** change Java version to match the build environment
+- **NEVER** modify any of these Java version properties:
+  - `<java.version>` in user-api/pom.xml
+  - `<maven.compiler.source>` in root pom.xml
+  - `<maven.compiler.target>` in root pom.xml
+  - `<maven.compiler.release>` if present
+  - `java-version` in GitHub Actions workflows (.github/workflows/*.yml)
+- Current project uses **Java 25** - this MUST be maintained at all times in ALL configuration files
+- If the build environment has a different Java version (e.g., Java 17), this is an **environment issue**, NOT a code issue
+- If compilation fails due to Java version mismatch:
+  - Do NOT change the Java version in any pom.xml or workflow file
+  - Document that the build environment needs to be updated
+  - You may skip build/test steps **locally** for development work, but:
+    - This is ONLY acceptable for local development environments
+    - GitHub Actions CI MUST still pass with Java 25
+    - Final PR MUST have all tests passing in CI with Java 25
+  - NEVER change the version to "fix" the build
+
+**Why this matters:**
+- Java 25 is intentionally chosen for this project to use cutting-edge features
+- Downgrading loses access to modern language features
+- Changing version breaks trust and project requirements
+
+**Modern Java 25 features to leverage:**
+- Record types for immutable data structures
+- Pattern matching for switch expressions and instanceof
+- Text blocks for multi-line strings
+- Sealed classes for controlled inheritance
+- Virtual threads and structured concurrency
+- var keyword for local variable type inference
 
 ### Spring Boot Best Practices
 - Use Spring Boot 4.x features and modern patterns
